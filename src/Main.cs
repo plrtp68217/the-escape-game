@@ -11,6 +11,11 @@ public partial class Main : Node3D
 	private LineEdit _ipInput;
 	private Label _statusLabel;
 	private EscapeGame.UI.LobbyMenu _lobbyMenu;
+	private EscapeGame.UI.Scoreboard _scoreboard;
+
+	// Сообщение, которое нужно показать в меню после перезагрузки сцены.
+	// Статическое, т.к. переживает пересоздание узла Main.
+	private static string _pendingStatus = string.Empty;
 
 	public override void _Ready()
 	{
@@ -27,9 +32,14 @@ public partial class Main : Node3D
 
 		_lobbyMenu = GetNode<EscapeGame.UI.LobbyMenu>(R.UI.LobbyMenu);
 		_lobbyMenu.Visible = false;
+		_lobbyMenu.LeaveRequested += OnLobbyLeave;
+
+		_scoreboard = GetNode<EscapeGame.UI.Scoreboard>(R.UI.Scoreboard);
+		_scoreboard.Visible = false;
 
 		GetNode<Button>(R.UI.HostButton).Pressed += OnHostPressed;
 		GetNode<Button>(R.UI.JoinButton).Pressed += OnJoinPressed;
+		GetNode<Button>(R.UI.PauseLeaveButton).Pressed += OnPauseLeave;
 
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 		GameState.SetPhase(GamePhase.MainMenu);
@@ -38,6 +48,32 @@ public partial class Main : Node3D
 		NetworkManager.Instance.ConnectionError += OnNetworkError;
 
 		LobbyManager.Instance.GameStarted += OnGameStarted;
+		LobbyManager.Instance.JoinRejectedGameInProgress += OnJoinRejected;
+
+		// Восстановить сообщение, переданное через перезагрузку сцены
+		// (например, «Игра уже идёт» или причина отключения).
+		if (!string.IsNullOrEmpty(_pendingStatus))
+		{
+			_statusLabel.Text = _pendingStatus;
+			_pendingStatus = string.Empty;
+		}
+	}
+
+	public override void _ExitTree()
+	{
+		// Обязательно отписываемся от событий автозагрузок (они переживают
+		// перезагрузку сцены), иначе останутся ссылки на уничтоженный узел.
+		if (NetworkManager.Instance != null)
+		{
+			NetworkManager.Instance.Connected -= OnNetworkConnected;
+			NetworkManager.Instance.ConnectionError -= OnNetworkError;
+		}
+
+		if (LobbyManager.Instance != null)
+		{
+			LobbyManager.Instance.GameStarted -= OnGameStarted;
+			LobbyManager.Instance.JoinRejectedGameInProgress -= OnJoinRejected;
+		}
 	}
 
 	private string GetPlayerName()
@@ -94,13 +130,61 @@ public partial class Main : Node3D
 
 	private void OnNetworkError(string reason)
 	{
-		_statusLabel.Text = reason;
+		// Соединение не удалось / сервер отключился — возвращаемся в меню
+		// с текстом причины.
+		ReturnToMenu(reason);
+	}
+
+	// Клиент подключился, но игра уже идёт — сервер отклонил вход.
+	private void OnJoinRejected()
+	{
+		ReturnToMenu(G.Messages.GameInProgress);
+	}
+
+	// Игрок нажал «Выйти» в лобби.
+	private void OnLobbyLeave()
+	{
+		ReturnToMenu();
+	}
+
+	// Игрок нажал «Выйти в меню» в меню паузы.
+	private void OnPauseLeave()
+	{
+		ReturnToMenu();
+	}
+
+	// Разрываем соединение и возвращаемся в чистое меню, перезагружая сцену.
+	// Перезагрузка гарантированно убирает игроков, камеру и остатки мира,
+	// иначе после выхода игрок остаётся стоять на карте.
+	private void ReturnToMenu(string status = "")
+	{
+		NetworkManager.Instance.Disconnect();
+		LobbyManager.Instance.Reset();
+
+		_pendingStatus = status;
+		GameState.SetPhase(GamePhase.MainMenu);
+		Input.MouseMode = Input.MouseModeEnum.Visible;
+
+		// Откладываем перезагрузку: ReturnToMenu часто вызывается из
+		// обработчика сигнала (нажатие кнопки / сетевое событие), а
+		// уничтожать текущую сцену прямо в нём нельзя.
+		GetTree().CallDeferred(SceneTree.MethodName.ReloadCurrentScene);
 	}
 
 	public override void _Input(InputEvent @event)
 	{
 		if (GameState.CurrentPhase != GamePhase.Gameplay && GameState.CurrentPhase != GamePhase.Paused)
 		{
+			return;
+		}
+
+		// Табло игроков по удержанию TAB во время игры.
+		if (@event is InputEventKey scoreKey && !scoreKey.Echo && scoreKey.Keycode == G.ScoreboardKey)
+		{
+			if (GameState.CurrentPhase == GamePhase.Gameplay)
+			{
+				_scoreboard.SetShown(scoreKey.Pressed);
+			}
 			return;
 		}
 
@@ -118,6 +202,7 @@ public partial class Main : Node3D
 			{
 				_pauseMenu.Visible = true;
 				_tipLabel.Visible = false;
+				_scoreboard.SetShown(false);
 				GameState.SetPhase(GamePhase.Paused);
 
 				Input.MouseMode = Input.MouseModeEnum.Visible;

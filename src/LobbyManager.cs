@@ -17,6 +17,12 @@ public partial class LobbyManager : Node
     public event Action LobbyUpdated;
     public event Action GameStarted;
 
+    /// <summary>
+    /// Срабатывает у клиента, если он подключился к серверу,
+    /// на котором игра уже идёт. Клиента нужно вернуть в меню.
+    /// </summary>
+    public event Action JoinRejectedGameInProgress;
+
     private readonly Dictionary<long, LobbyPlayerInfo> _players = new();
 
     public IReadOnlyDictionary<long, LobbyPlayerInfo> Players => _players;
@@ -46,6 +52,8 @@ public partial class LobbyManager : Node
 
     public bool IsHost => Multiplayer.MultiplayerPeer != null && Multiplayer.IsServer();
 
+    public bool IsGameStarted => _isGameStarted;
+
     public bool CanStartGame()
     {
         if (!Multiplayer.IsServer())
@@ -60,6 +68,14 @@ public partial class LobbyManager : Node
     {
         if (!Multiplayer.IsServer())
         {
+            return;
+        }
+
+        // Поздний игрок: игра уже началась. Сообщаем ему об этом и
+        // не регистрируем в лобби.
+        if (_isGameStarted)
+        {
+            RpcId(id, nameof(NotifyGameInProgress));
             return;
         }
 
@@ -182,6 +198,13 @@ public partial class LobbyManager : Node
     private void GameStarting()
     {
         GameStarted?.Invoke();
+    }
+
+    // Сервер вызывает у позднего клиента, чтобы сообщить, что игра уже идёт.
+    [Rpc(MultiplayerApi.RpcMode.Authority, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    private void NotifyGameInProgress()
+    {
+        JoinRejectedGameInProgress?.Invoke();
     }
 
     public void SendPlayerName(string name)

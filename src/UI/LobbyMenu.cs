@@ -13,6 +13,9 @@ public partial class LobbyMenu : Control
 
 	private bool _isReady;
 
+	/// <summary>Игрок нажал «Выйти». Обрабатывает Main (возврат в меню).</summary>
+	public event System.Action LeaveRequested;
+
 	public override void _Ready()
 	{
 		_playerListLabel = GetNode<Label>("VBoxContainer/PlayerListLabel");
@@ -30,6 +33,17 @@ public partial class LobbyMenu : Control
 
 		_startButton.Visible = LobbyManager.Instance.IsHost;
 		Refresh();
+	}
+
+	public override void _ExitTree()
+	{
+		// Отписываемся от автозагрузки: LobbyMenu пересоздаётся при
+		// перезагрузке сцены, а LobbyManager — нет.
+		if (LobbyManager.Instance != null)
+		{
+			LobbyManager.Instance.LobbyUpdated -= Refresh;
+			LobbyManager.Instance.GameStarted -= OnGameStarted;
+		}
 	}
 
 	private void OnReadyPressed()
@@ -51,9 +65,7 @@ public partial class LobbyMenu : Control
 
 	private void OnLeavePressed()
 	{
-		Multiplayer.MultiplayerPeer?.Close();
-		Multiplayer.MultiplayerPeer = null;
-		GetTree().Quit();
+		LeaveRequested?.Invoke();
 	}
 
 	private void OnGameStarted()

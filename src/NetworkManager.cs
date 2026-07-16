@@ -64,13 +64,33 @@ public partial class NetworkManager : Node
         return Error.Ok;
     }
 
+    // Разорвать текущее сетевое соединение (и как хост, и как клиент)
+    // и вернуться в оффлайн-состояние.
+    public void Disconnect()
+    {
+        if (Multiplayer.MultiplayerPeer != null)
+        {
+            Multiplayer.MultiplayerPeer.Close();
+            Multiplayer.MultiplayerPeer = null;
+        }
+    }
+
     // Срабатывает у сервера, когда к нему подключается новый клиент.
     private void OnPeerConnected(long id)
     {
-        if (Multiplayer.IsServer())
+        if (!Multiplayer.IsServer())
         {
-            SpawnPlayer((int)id);
+            return;
         }
+
+        // Игра уже идёт — не спавним позднего игрока. LobbyManager сам
+        // отправит ему уведомление, что игра уже началась.
+        if (LobbyManager.Instance != null && LobbyManager.Instance.IsGameStarted)
+        {
+            return;
+        }
+
+        SpawnPlayer((int)id);
     }
 
     // Срабатывает у всех, когда кто-то отключился. Удаляем узел

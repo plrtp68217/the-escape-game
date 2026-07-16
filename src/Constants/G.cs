@@ -23,6 +23,7 @@ public static class G
 
     // Input
     public const Key PauseKey = Key.Escape;
+    public const Key ScoreboardKey = Key.Tab;
 
     // UI messages
     public static class Messages
@@ -33,6 +34,8 @@ public static class G
         public const string ServerDisconnected = "Сервер отключился";
         public const string ConnectionFailed = "Не удалось подключиться к серверу";
         public const string DefaultPlayerName = "Игрок";
+        public const string GameInProgress = "Игра уже идёт";
+        public const string NoPlayers = "Нет игроков";
     }
 
     // Lobby

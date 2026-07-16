@@ -1,8 +1,9 @@
 [gd_scene format=3 uid="uid://blpeh5w31vne2"]
 
 [ext_resource type="Script" uid="uid://bfuhnc0esrq36" path="res://src/Main.cs" id="1_0wfyh"]
-[ext_resource type="Script" path="res://src/UI/LobbyMenu.cs" id="2_lobby"]
+[ext_resource type="Script" uid="uid://u888yl048vt2" path="res://src/UI/LobbyMenu.cs" id="2_lobby"]
 [ext_resource type="PackedScene" uid="uid://cqlkyoe07cmke" path="res://scenes/wall.tscn" id="3_sugp2"]
+[ext_resource type="Script" uid="uid://curqjov6a8q0q" path="res://src/UI/Scoreboard.cs" id="4_score"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wjy38"]
 size = Vector3(60, 2, 60)
@@ -64,9 +65,23 @@ offset_right = 20.0
 offset_bottom = 11.5
 grow_horizontal = 2
 grow_vertical = 2
-text = "[PAUSE]
-MouseMode - Visible"
+text = "[PAUSE]"
 horizontal_alignment = 1
+
+[node name="LeaveButton" type="Button" parent="UserInterface/PauseMenu" unique_id=876765838]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -80.0
+offset_top = 30.0
+offset_right = 80.0
+offset_bottom = 61.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Выйти в меню"
 
 [node name="TipLabel" type="Label" parent="UserInterface" unique_id=1257896697]
 layout_mode = 0
@@ -130,9 +145,9 @@ text = "Подключиться (Join)"
 layout_mode = 2
 horizontal_alignment = 1
 
-[node name="LobbyMenu" type="Control" parent="UserInterface"]
+[node name="LobbyMenu" type="Control" parent="UserInterface" unique_id=826483004]
 visible = false
-layout_mode = 3
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -140,7 +155,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("2_lobby")
 
-[node name="Background" type="ColorRect" parent="UserInterface/LobbyMenu"]
+[node name="Background" type="ColorRect" parent="UserInterface/LobbyMenu" unique_id=2037018513]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -149,7 +164,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.75)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/LobbyMenu"]
+[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/LobbyMenu" unique_id=1411012630]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -164,31 +179,70 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
-[node name="TitleLabel" type="Label" parent="UserInterface/LobbyMenu/VBoxContainer"]
+[node name="TitleLabel" type="Label" parent="UserInterface/LobbyMenu/VBoxContainer" unique_id=241541473]
 layout_mode = 2
 text = "Лобби"
 horizontal_alignment = 1
 
-[node name="PlayerListLabel" type="Label" parent="UserInterface/LobbyMenu/VBoxContainer"]
+[node name="PlayerListLabel" type="Label" parent="UserInterface/LobbyMenu/VBoxContainer" unique_id=1125523334]
 layout_mode = 2
 text = "Нет игроков"
 horizontal_alignment = 1
 
-[node name="ReadyButton" type="Button" parent="UserInterface/LobbyMenu/VBoxContainer"]
+[node name="ReadyButton" type="Button" parent="UserInterface/LobbyMenu/VBoxContainer" unique_id=783079047]
 layout_mode = 2
 text = "Готов"
 
-[node name="StartButton" type="Button" parent="UserInterface/LobbyMenu/VBoxContainer"]
+[node name="StartButton" type="Button" parent="UserInterface/LobbyMenu/VBoxContainer" unique_id=1988274867]
 layout_mode = 2
-text = "Начать игру"
 disabled = true
+text = "Начать игру"
 
-[node name="LeaveButton" type="Button" parent="UserInterface/LobbyMenu/VBoxContainer"]
+[node name="LeaveButton" type="Button" parent="UserInterface/LobbyMenu/VBoxContainer" unique_id=942723636]
 layout_mode = 2
 text = "Выйти"
 
-[node name="StatusLabel" type="Label" parent="UserInterface/LobbyMenu/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="UserInterface/LobbyMenu/VBoxContainer" unique_id=2007883481]
 layout_mode = 2
+horizontal_alignment = 1
+
+[node name="Scoreboard" type="Control" parent="UserInterface" unique_id=740719231]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("4_score")
+
+[node name="Panel" type="PanelContainer" parent="UserInterface/Scoreboard" unique_id=901787362]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -120.0
+offset_right = 150.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UserInterface/Scoreboard/Panel" unique_id=1411542004]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TitleLabel" type="Label" parent="UserInterface/Scoreboard/Panel/VBoxContainer" unique_id=1404639942]
+layout_mode = 2
+text = "Игроки на сервере"
+horizontal_alignment = 1
+
+[node name="PlayerListLabel" type="Label" parent="UserInterface/Scoreboard/Panel/VBoxContainer" unique_id=580520229]
+layout_mode = 2
+text = "Нет игроков"
 horizontal_alignment = 1
 
 [node name="Wall" parent="." unique_id=311954543 instance=ExtResource("3_sugp2")]
