@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://cd1e025wlou5a"]
 
 [ext_resource type="Script" uid="uid://cqpgoqo6go5sm" path="res://src/Player.cs" id="1_3vyb7"]
+[ext_resource type="PackedScene" uid="uid://c614tsqfmhtvf" path="res://assets/characters/sanitar.glb" id="2_g2els"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_3vyb7"]
 properties/0/path = NodePath(".:position")
@@ -12,8 +13,6 @@ properties/1/replication_mode = 1
 properties/2/path = NodePath(".:PlayerId")
 properties/2/spawn = true
 properties/2/replication_mode = 0
-
-[sub_resource type="CapsuleMesh" id="CapsuleMesh_wjy38"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_nsfkv"]
 
@@ -27,12 +26,13 @@ replication_config = SubResource("SceneReplicationConfig_3vyb7")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 
 [node name="Camera3D" type="Camera3D" parent="Pivot" unique_id=434378025]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.19726515, -0.49853104)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.80273485, -0.49853104)
 
 [node name="Model" type="Node3D" parent="." unique_id=105026785]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Model" unique_id=1346065809]
-mesh = SubResource("CapsuleMesh_wjy38")
+[node name="Character" parent="Model" unique_id=1500119015 instance=ExtResource("2_g2els")]
+transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=43441623]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 shape = SubResource("CapsuleShape3D_nsfkv")
