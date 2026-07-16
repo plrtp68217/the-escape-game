@@ -37,7 +37,12 @@ public partial class Player : CharacterBody3D
 
 	public override void _Input(InputEvent @event)
 	{
-		if (IsMultiplayerAuthority() == false)
+		if (GameState.CurrentPhase != GamePhase.Gameplay)
+		{
+			return;
+		}
+
+		if (Multiplayer.MultiplayerPeer == null || IsMultiplayerAuthority() == false)
 		{
 			return;
 		}
@@ -57,7 +62,12 @@ public partial class Player : CharacterBody3D
 
 	public override void _PhysicsProcess(double delta)
 	{
-		if (IsMultiplayerAuthority() == false)
+		if (GameState.CurrentPhase != GamePhase.Gameplay)
+		{
+			return;
+		}
+
+		if (Multiplayer.MultiplayerPeer == null || IsMultiplayerAuthority() == false)
 		{
 			return;
 		}

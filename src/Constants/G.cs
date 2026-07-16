@@ -32,5 +32,12 @@ public static class G
         public const string JoinError = "Ошибка подключения";
         public const string ServerDisconnected = "Сервер отключился";
         public const string ConnectionFailed = "Не удалось подключиться к серверу";
+        public const string DefaultPlayerName = "Игрок";
+    }
+
+    // Lobby
+    public static class Lobby
+    {
+        public const int MinPlayersToStart = 1;
     }
 }

@@ -9,9 +9,9 @@ exports/
 build/
 
 /android/
-
-.vscode/settings.json
-
+.vscode/
 # Assistant files
 AGENTS.md
 LOG.md
+TASKS.md
+data_TheEscapeGame_windows_x86_64

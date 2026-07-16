@@ -19,10 +19,12 @@ public static class R
         public static readonly NodePath PauseMenu = "UserInterface/PauseMenu";
         public static readonly NodePath TipLabel = "UserInterface/TipLabel";
         public static readonly NodePath NetworkMenu = "UserInterface/NetworkMenu";
+        public static readonly NodePath NameInput = "UserInterface/NetworkMenu/VBoxContainer/NameInput";
         public static readonly NodePath IpInput = "UserInterface/NetworkMenu/VBoxContainer/IpInput";
         public static readonly NodePath StatusLabel = "UserInterface/NetworkMenu/VBoxContainer/StatusLabel";
         public static readonly NodePath HostButton = "UserInterface/NetworkMenu/VBoxContainer/HostButton";
         public static readonly NodePath JoinButton = "UserInterface/NetworkMenu/VBoxContainer/JoinButton";
+        public static readonly NodePath LobbyMenu = "UserInterface/LobbyMenu";
     }
 
     // Character assets

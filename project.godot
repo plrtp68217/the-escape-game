@@ -18,6 +18,7 @@ config/icon="res://icon.svg"
 [autoload]
 
 NetworkManager="*uid://bmqb6f38q05p7"
+LobbyManager="*res://src/LobbyManager.cs"
 
 [display]
 
