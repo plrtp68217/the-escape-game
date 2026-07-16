@@ -1,5 +1,7 @@
 using Godot;
 
+namespace EscapeGame;
+
 // Автозагружаемый (Autoload) синглтон, который отвечает за старт сервера,
 // подключение клиентов и спавн игроков. Должен быть добавлен в
 // Project Settings -> Autoload под именем "NetworkManager".
@@ -7,11 +9,11 @@ public partial class NetworkManager : Node
 {
 	public static NetworkManager Instance { get; private set; }
 
-	public const int Port = 7777;
-	public const int MaxPlayers = 8;
+	public const int Port = G.Port;
+	public const int MaxPlayers = G.MaxPlayers;
 
-	private const string PlayerScenePath = "res://scenes/player.tscn";
-	private const string PlayersContainerPath = "/root/Main/Players";
+	private const string PlayerScenePath = R.PlayerScene;
+	private static readonly NodePath PlayersContainerPath = R.PlayersContainer;
 
 	public event System.Action Connected;
 	public event System.Action<string> ConnectionError;
@@ -31,7 +33,7 @@ public partial class NetworkManager : Node
 	public Error CreateHost()
 	{
 		var peer = new ENetMultiplayerPeer();
-		Error err = peer.CreateServer(Port, MaxPlayers);
+		Error err = peer.CreateServer(G.Port, G.MaxPlayers);
 		if (err != Error.Ok)
 		{
 			GD.PrintErr("Не удалось создать сервер: ", err);
@@ -39,7 +41,7 @@ public partial class NetworkManager : Node
 		}
 
 		Multiplayer.MultiplayerPeer = peer;
-		GD.Print("Сервер запущен на порту ", Port);
+		GD.Print("Сервер запущен на порту ", G.Port);
 
 		SpawnPlayer(Multiplayer.GetUniqueId());
 		Connected?.Invoke();
@@ -50,7 +52,7 @@ public partial class NetworkManager : Node
 	public Error JoinServer(string address)
 	{
 		var peer = new ENetMultiplayerPeer();
-		Error err = peer.CreateClient(address, Port);
+		Error err = peer.CreateClient(address, G.Port);
 		if (err != Error.Ok)
 		{
 			GD.PrintErr("Не удалось подключиться: ", err);
@@ -91,12 +93,12 @@ public partial class NetworkManager : Node
 
 	private void OnConnectionFailed()
 	{
-		ConnectionError?.Invoke("Не удалось подключиться к серверу");
+		ConnectionError?.Invoke(G.Messages.ConnectionFailed);
 	}
 
 	private void OnServerDisconnected()
 	{
-		ConnectionError?.Invoke("Сервер отключился");
+		ConnectionError?.Invoke(G.Messages.ServerDisconnected);
 	}
 
 	// Вызывается ТОЛЬКО на сервере. Инстанцирование под MultiplayerSpawner
@@ -107,7 +109,7 @@ public partial class NetworkManager : Node
 		var player = scene.Instantiate<Player>();
 
 		player.Name = id.ToString();
-		player.Position = new Vector3(0, 1, 0);
+		player.Position = G.SpawnPosition;
 		player.PlayerId = id; // назначит multiplayer authority (см. Player.cs)
 
 		var playersNode = GetTree().Root.GetNode(PlayersContainerPath);

@@ -1,11 +1,13 @@
 using Godot;
 
+namespace EscapeGame;
+
 public partial class Player : CharacterBody3D
 {
-	[Export] public int Speed { get; set; } = 10;
-	[Export] public int FallAcceleration { get; set; } = 75;
-	[Export] public int JumpImpulse { get; set; } = 20;
-	[Export] public float MouseSensitivity { get; set; } = 0.002f;
+	[Export] public int Speed { get; set; } = G.Speed;
+	[Export] public int FallAcceleration { get; set; } = G.FallAcceleration;
+	[Export] public int JumpImpulse { get; set; } = G.JumpImpulse;
+	[Export] public float MouseSensitivity { get; set; } = G.MouseSensitivity;
 	[Export] public int PlayerId { get; set; } = 1;
 
 	private Vector3 _targetVelocity = Vector3.Zero;

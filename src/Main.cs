@@ -1,5 +1,7 @@
 using Godot;
 
+namespace EscapeGame;
+
 public partial class Main : Node3D
 {
 	private ColorRect _pauseMenu;
@@ -10,18 +12,20 @@ public partial class Main : Node3D
 
 	public override void _Ready()
 	{
-		_pauseMenu = GetNode<ColorRect>("UserInterface/PauseMenu");
+		_pauseMenu = GetNode<ColorRect>(R.UI.PauseMenu);
 		_pauseMenu.Visible = false;
 
-		_tipLabel = GetNode<Label>("UserInterface/TipLabel");
+		_tipLabel = GetNode<Label>(R.UI.TipLabel);
 		_tipLabel.Visible = false;
 
-		_networkMenu = GetNode<Control>("UserInterface/NetworkMenu");
-		_ipInput = GetNode<LineEdit>("UserInterface/NetworkMenu/VBoxContainer/IpInput");
-		_statusLabel = GetNode<Label>("UserInterface/NetworkMenu/VBoxContainer/StatusLabel");
+		_networkMenu = GetNode<Control>(R.UI.NetworkMenu);
+		_ipInput = GetNode<LineEdit>(R.UI.IpInput);
+		_statusLabel = GetNode<Label>(R.UI.StatusLabel);
 
-		GetNode<Button>("UserInterface/NetworkMenu/VBoxContainer/HostButton").Pressed += OnHostPressed;
-		GetNode<Button>("UserInterface/NetworkMenu/VBoxContainer/JoinButton").Pressed += OnJoinPressed;
+		GetNode<Button>(R.UI.HostButton).Pressed +=
+			OnHostPressed;
+		GetNode<Button>(R.UI.JoinButton).Pressed +=
+			OnJoinPressed;
 
 		// Пока не подключились - мышь свободна, чтобы можно было нажимать кнопки.
 		Input.MouseMode = Input.MouseModeEnum.Visible;
@@ -35,15 +39,17 @@ public partial class Main : Node3D
 		Error err = NetworkManager.Instance.CreateHost();
 		if (err != Error.Ok)
 		{
-			_statusLabel.Text = $"Ошибка старта сервера: {err}";
+			_statusLabel.Text = $"{G.Messages.ServerStartError}: {err}";
 		}
 	}
 
 	private void OnJoinPressed()
 	{
-		string address = string.IsNullOrWhiteSpace(_ipInput.Text) ? "127.0.0.1" : _ipInput.Text.Trim();
+		string address = string.IsNullOrWhiteSpace(_ipInput.Text)
+			? G.DefaultAddress
+			: _ipInput.Text.Trim();
 		Error err = NetworkManager.Instance.JoinServer(address);
-		_statusLabel.Text = err != Error.Ok ? $"Ошибка подключения: {err}" : "Подключение...";
+		_statusLabel.Text = err != Error.Ok ? $"{G.Messages.JoinError}: {err}" : G.Messages.Joining;
 	}
 
 	private void OnNetworkConnected()
@@ -66,7 +72,7 @@ public partial class Main : Node3D
 			return;
 		}
 
-		if (@event is InputEventKey keyEvent && keyEvent.Pressed && keyEvent.Keycode == Key.Escape)
+		if (@event is InputEventKey keyEvent && keyEvent.Pressed && keyEvent.Keycode == G.PauseKey)
 		{
 			if (_pauseMenu.Visible)
 			{
