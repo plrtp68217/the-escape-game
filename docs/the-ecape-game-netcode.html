@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сетевая архитектура The Escape Game</title>
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  img, svg { display: block; max-width: 100%; }
+  :root {
+    color-scheme: light dark;
+
+    /* neutrals — biased slightly cool/blue, chosen not defaulted */
+    --bg:      #e9edf1;
+    --surface: #ffffff;
+    --surface-2:#f2f5f8;
+    --ink:     #16222e;
+    --muted:   #566472;
+    --faint:   #8695a3;
+    --line:    #d1dae2;
+    --line-2:  #e0e7ee;
+
+    /* semantic role colors — carry meaning across diagrams */
+    --c-server:  #b9741a;  /* authority / host  */
+    --c-server-bg:#f8ecd8;
+    --c-client:  #0b8794;  /* peer / client     */
+    --c-client-bg:#dcf1f3;
+    --c-rpc:     #6d4fca;  /* remote procedure call */
+    --c-rpc-bg:  #e8e2f8;
+    --c-repl:    #1f8a56;  /* spawner + synchronizer */
+    --c-repl-bg: #dcf0e4;
+    --c-warn:    #c0392b;
+
+    --mono: ui-monospace, "Cascadia Code", "JetBrains Mono", "Consolas", monospace;
+    --sans: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+
+    --maxw: 1080px;
+    --radius: 10px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:      #0d141c;
+      --surface: #151f29;
+      --surface-2:#1b2732;
+      --ink:     #e5edf4;
+      --muted:   #93a4b4;
+      --faint:   #6b7d8d;
+      --line:    #26333f;
+      --line-2:  #202c37;
+
+      --c-server:  #e6a844;  --c-server-bg:#2c2415;
+      --c-client:  #34c1cf;  --c-client-bg:#122a2d;
+      --c-rpc:     #a58ef0;  --c-rpc-bg:  #201d33;
+      --c-repl:    #46c281;  --c-repl-bg: #12271d;
+      --c-warn:    #ef6a5b;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg:#e9edf1; --surface:#ffffff; --surface-2:#f2f5f8; --ink:#16222e;
+    --muted:#566472; --faint:#8695a3; --line:#d1dae2; --line-2:#e0e7ee;
+    --c-server:#b9741a; --c-server-bg:#f8ecd8;
+    --c-client:#0b8794; --c-client-bg:#dcf1f3;
+    --c-rpc:#6d4fca;   --c-rpc-bg:#e8e2f8;
+    --c-repl:#1f8a56;  --c-repl-bg:#dcf0e4;
+    --c-warn:#c0392b;
+  }
+  :root[data-theme="dark"] {
+    --bg:#0d141c; --surface:#151f29; --surface-2:#1b2732; --ink:#e5edf4;
+    --muted:#93a4b4; --faint:#6b7d8d; --line:#26333f; --line-2:#202c37;
+    --c-server:#e6a844; --c-server-bg:#2c2415;
+    --c-client:#34c1cf; --c-client-bg:#122a2d;
+    --c-rpc:#a58ef0;   --c-rpc-bg:#201d33;
+    --c-repl:#46c281;  --c-repl-bg:#12271d;
+    --c-warn:#ef6a5b;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* dotted engineering-grid backdrop */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: radial-gradient(circle, var(--line) 1px, transparent 1px);
+    background-size: 26px 26px;
+    opacity: .35;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: var(--maxw); margin: 0 auto; padding: 0 22px 100px; }
+
+  /* ---- sticky legend bar ---- */
+  header.bar {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar-inner {
+    max-width: var(--maxw); margin: 0 auto; padding: 10px 22px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  }
+  .bar-title {
+    font-family: var(--mono); font-size: .74rem; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+    margin-right: auto;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .lg { display: inline-flex; align-items: center; gap: 7px; font-size: .72rem; font-family: var(--mono); color: var(--muted); white-space: nowrap; }
+  .dot { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+  .dot.server { background: var(--c-server); }
+  .dot.client { background: var(--c-client); }
+  .dot.rpc    { background: var(--c-rpc); }
+  .dot.repl   { background: var(--c-repl); }
+
+  /* ---- hero ---- */
+  .hero { padding: 68px 0 40px; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    font-family: var(--mono); font-size: .74rem; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--c-server); margin: 0 0 18px;
+  }
+  h1 {
+    font-family: var(--mono); font-weight: 700; font-size: clamp(1.9rem, 5vw, 3.1rem);
+    line-height: 1.08; letter-spacing: -.01em; margin: 0 0 20px; text-wrap: balance;
+  }
+  h1 .g { color: var(--c-repl); }
+  .lede { font-size: 1.12rem; color: var(--muted); max-width: 62ch; margin: 0; }
+
+  /* ---- section scaffolding ---- */
+  section { padding: 52px 0; border-bottom: 1px solid var(--line-2); }
+  .sec-head { display: flex; align-items: baseline; gap: 14px; margin: 0 0 8px; }
+  .sec-num {
+    font-family: var(--mono); font-size: .82rem; font-weight: 700;
+    color: var(--faint); letter-spacing: .05em; flex: none;
+  }
+  h2 { font-family: var(--mono); font-size: clamp(1.3rem,3vw,1.75rem); font-weight: 700; margin: 0; letter-spacing: -.01em; text-wrap: balance; }
+  .sec-sub { color: var(--muted); margin: 4px 0 30px 44px; max-width: 68ch; }
+  @media (max-width: 620px){ .sec-sub { margin-left: 0; } }
+
+  p { max-width: 70ch; }
+  .prose { color: var(--muted); }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  code.inl {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: .06em .4em; border-radius: 5px; color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* ---- flow timeline ---- */
+  .flow { list-style: none; margin: 26px 0 0; padding: 0; position: relative; }
+  .flow::before {
+    content: ""; position: absolute; left: 15px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--line); border-radius: 2px;
+  }
+  .step { position: relative; padding: 0 0 22px 52px; }
+  .step:last-child { padding-bottom: 0; }
+  .step .badge {
+    position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center; font-family: var(--mono); font-weight: 700;
+    font-size: .82rem; background: var(--surface); border: 2px solid var(--line); color: var(--muted);
+    z-index: 1;
+  }
+  .step .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 14px 16px;
+  }
+  .step .card-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .api {
+    font-family: var(--mono); font-size: .84rem; color: var(--ink);
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: .12em .5em; border-radius: 6px; overflow-x: auto; max-width: 100%;
+  }
+  .step .desc { color: var(--muted); font-size: .95rem; margin: 0; }
+  .step .desc code { font-family: var(--mono); font-size: .86em; color: var(--ink); }
+
+  /* wire step = crosses the network */
+  .step.wire .badge { border-style: dashed; border-color: var(--c-rpc); color: var(--c-rpc); background: var(--c-rpc-bg); }
+  .step.wire .card { border-color: var(--c-rpc); border-style: dashed; background: color-mix(in srgb, var(--c-rpc-bg) 40%, var(--surface)); }
+
+  /* actor / mechanism chips */
+  .chip {
+    font-family: var(--mono); font-size: .66rem; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; padding: .2em .55em; border-radius: 999px; white-space: nowrap;
+    border: 1px solid transparent;
+  }
+  .chip.server { color: var(--c-server); background: var(--c-server-bg); border-color: color-mix(in srgb, var(--c-server) 35%, transparent); }
+  .chip.client { color: var(--c-client); background: var(--c-client-bg); border-color: color-mix(in srgb, var(--c-client) 35%, transparent); }
+  .chip.both   { color: var(--muted);    background: var(--surface-2);  border-color: var(--line); }
+  .chip.rpc    { color: var(--c-rpc);    background: var(--c-rpc-bg);   border-color: color-mix(in srgb, var(--c-rpc) 35%, transparent); }
+  .chip.repl   { color: var(--c-repl);   background: var(--c-repl-bg);  border-color: color-mix(in srgb, var(--c-repl) 35%, transparent); }
+
+  /* ---- node / box diagrams ---- */
+  .diagram { margin: 26px 0 0; overflow-x: auto; }
+  .rail {
+    display: flex; align-items: stretch; gap: 0; min-width: min-content;
+    flex-wrap: wrap;
+  }
+  .node {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 13px 15px; min-width: 168px; flex: 1;
+  }
+  .node .nt { font-family: var(--mono); font-weight: 700; font-size: .82rem; margin-bottom: 5px; display:flex; align-items:center; gap:7px; }
+  .node .nd { font-size: .82rem; color: var(--muted); }
+  .node.srv  { border-top: 3px solid var(--c-server); }
+  .node.cli  { border-top: 3px solid var(--c-client); }
+  .node.repl { border-top: 3px solid var(--c-repl); }
+  .node.rpc  { border-top: 3px solid var(--c-rpc); }
+  .conn {
+    align-self: center; flex: none; padding: 0 6px; color: var(--c-rpc);
+    font-family: var(--mono); font-weight: 700; font-size: 1.1rem;
+    display: grid; place-items: center;
+  }
+  .conn small { display:block; font-size:.6rem; font-weight:700; letter-spacing:.04em; color: var(--faint); text-align:center; margin-top:2px; }
+  @media (max-width: 720px){
+    .rail { flex-direction: column; }
+    .conn { transform: rotate(90deg); padding: 4px 0; }
+  }
+
+  /* tree diagram */
+  .tree { font-family: var(--mono); font-size: .84rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px; overflow-x: auto; }
+  .tree pre { margin: 0; white-space: pre; color: var(--muted); }
+  .tree .hl-srv  { color: var(--c-server); font-weight: 700; }
+  .tree .hl-repl { color: var(--c-repl);  font-weight: 700; }
+  .tree .hl-note { color: var(--faint); }
+
+  /* callout */
+  .callout {
+    display: flex; gap: 12px; margin: 24px 0 0;
+    background: var(--surface); border: 1px solid var(--line);
+    border-left: 3px solid var(--c-server); border-radius: var(--radius); padding: 14px 16px;
+  }
+  .callout.warn { border-left-color: var(--c-warn); }
+  .callout .k { font-family: var(--mono); font-weight: 700; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--c-server); flex: none; padding-top: 2px; }
+  .callout.warn .k { color: var(--c-warn); }
+  .callout .b { color: var(--muted); font-size: .93rem; margin: 0; }
+  .callout .b strong { color: var(--ink); }
+
+  /* code block */
+  pre.code {
+    font-family: var(--mono); font-size: .82rem; line-height: 1.55;
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 15px 16px; overflow-x: auto; margin: 22px 0 0; color: var(--ink);
+  }
+  pre.code .cm { color: var(--faint); }
+  pre.code .kw { color: var(--c-rpc); }
+  pre.code .at { color: var(--c-repl); }
+  pre.code .fn { color: var(--c-server); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 26px; }
+  @media (max-width: 720px){ .grid2 { grid-template-columns: 1fr; } }
+
+  /* reference table */
+  .tbl-wrap { overflow-x: auto; margin-top: 26px; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: .88rem; }
+  thead th {
+    text-align: left; font-family: var(--mono); font-size: .68rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); padding: 11px 14px;
+    background: var(--surface-2); border-bottom: 1px solid var(--line);
+  }
+  tbody td { padding: 11px 14px; border-bottom: 1px solid var(--line-2); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:first-child { font-family: var(--mono); font-size: .82rem; color: var(--ink); white-space: nowrap; }
+  tbody td:nth-child(2) { color: var(--muted); }
+  tbody tr:hover td { background: var(--surface); }
+
+  .foot { padding-top: 40px; color: var(--faint); font-size: .8rem; font-family: var(--mono); }
+
+  a { color: var(--c-client); }
+  :focus-visible { outline: 2px solid var(--c-client); outline-offset: 2px; border-radius: 4px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .step, .node, section > * { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <span class="bar-title">Netcode · Godot Multiplayer API</span>
+    <div class="legend" aria-label="Легенда цветов">
+      <span class="lg"><span class="dot server"></span>Хост / сервер (authority)</span>
+      <span class="lg"><span class="dot client"></span>Клиент / peer</span>
+      <span class="lg"><span class="dot rpc"></span>RPC (по сети)</span>
+      <span class="lg"><span class="dot repl"></span>Репликация (Spawner/Sync)</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="hero">
+    <p class="eyebrow">The Escape Game · C# · Godot 4</p>
+    <h1>Как игра синхронизируется <span class="g">между хостом и клиентами</span></h1>
+    <p class="lede">Разбор по шагам: какие узлы и вызовы Godot High-Level Multiplayer API работают при создании хоста, подключении клиента, спавне и синхронизации игроков, предметов на карте и ломаемых стен — с указанием, что и в какой момент срабатывает.</p>
+  </div>
+
+  <!-- ============ 0. КАРТА АРХИТЕКТУРЫ ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">00</span><h2>Из чего собрана сеть</h2></div>
+    <p class="sec-sub">Два автозагружаемых синглтона держат состояние сети и лобби (переживают перезагрузку сцены). Внутри сцены <code class="inl">main.tscn</code> живут узлы репликации Godot, которые автоматически рассылают спавны и состояние.</p>
+
+    <div class="diagram">
+      <div class="rail">
+        <div class="node srv">
+          <div class="nt"><span class="dot server"></span>NetworkManager</div>
+          <div class="nd">Autoload. Поднимает ENet-peer, ловит сигналы <code class="inl">Multiplayer.*</code>, спавнит игроков на сервере.</div>
+        </div>
+        <div class="conn">·</div>
+        <div class="node srv">
+          <div class="nt"><span class="dot server"></span>LobbyManager</div>
+          <div class="nd">Autoload. Список игроков, готовность, старт матча. Всё через RPC, авторитет — сервер.</div>
+        </div>
+        <div class="conn">·</div>
+        <div class="node repl">
+          <div class="nt"><span class="dot repl"></span>MultiplayerSpawner</div>
+          <div class="nd">В <code class="inl">main.tscn</code>. Что сервер добавит в <code class="inl">Players</code> — само появится у всех.</div>
+        </div>
+        <div class="conn">·</div>
+        <div class="node repl">
+          <div class="nt"><span class="dot repl"></span>MultiplayerSynchronizer</div>
+          <div class="nd">Внутри <code class="inl">player.tscn</code>. Гонит <code class="inl">position/rotation</code> каждый тик от владельца остальным.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tree" style="margin-top:16px">
+<pre>/root
+├─ <span class="hl-srv">NetworkManager</span>        <span class="hl-note">(autoload — сеть)</span>
+├─ <span class="hl-srv">LobbyManager</span>          <span class="hl-note">(autoload — лобби, RPC)</span>
+└─ Main                  <span class="hl-note">(сцена: мир + UI)</span>
+   ├─ Ground / Wall …    <span class="hl-note">статичная геометрия, грузится одинаково у всех</span>
+   ├─ Players            <span class="hl-note">← сюда сервер добавляет игроков</span>
+   ├─ <span class="hl-repl">MultiplayerSpawner</span>    spawn_path = ../Players
+   └─ UserInterface      <span class="hl-note">меню / лобби / табло</span>
+
+player.tscn (spawnable)
+   Player (CharacterBody3D)          <span class="hl-note">authority = peer владельца</span>
+   └─ <span class="hl-repl">MultiplayerSynchronizer</span>  position(Always) rotation(Always) PlayerId(spawn)</pre>
+    </div>
+
+    <div class="callout">
+      <span class="k">Модель</span>
+      <p class="b"><strong>Client–server с авторитетом сервера.</strong> Хост одновременно и сервер (peer id = 1), и игрок. Клиенты не спавнят и не удаляют узлы напрямую — они лишь просят сервер, а решения принимает и рассылает он.</p>
+    </div>
+  </section>
+
+  <!-- ============ 1. СОЗДАНИЕ ХОСТА ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">01</span><h2>Создание хоста</h2></div>
+    <p class="sec-sub">Кнопка «Создать игру» → <code class="inl">NetworkManager.CreateHost()</code>. Хост становится сервером с peer id&nbsp;=&nbsp;1 и сразу спавнит самого себя.</p>
+
+    <ol class="flow">
+      <li class="step">
+        <span class="badge">1</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip both">Godot API</span></div>
+          <div class="api">new ENetMultiplayerPeer().CreateServer(Port, MaxPlayers)</div>
+          <p class="desc" style="margin-top:8px">Создаётся ENet-сервер на порту <code>7777</code> до 8 игроков. Пока это просто открытый сокет — движок ещё не знает, что это «мультиплеер».</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">2</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span></div>
+          <div class="api">Multiplayer.MultiplayerPeer = peer</div>
+          <p class="desc" style="margin-top:8px">Ключевой момент: как только peer присвоен, High-Level API «оживает». <code>Multiplayer.IsServer()</code> становится <code>true</code>, а <code>GetUniqueId()</code> возвращает <code>1</code>. Начинают приходить сигналы.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">3</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip rpc">Lobby</span></div>
+          <div class="api">LobbyManager.RegisterHost()</div>
+          <p class="desc" style="margin-top:8px">Хост заносит сам себя в список лобби (<code>id = 1</code>, не готов). Пока он один — рассылать некому.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">4</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip repl">Spawn</span></div>
+          <div class="api">SpawnPlayer(GetUniqueId()) → Players.AddChild(player, true)</div>
+          <p class="desc" style="margin-top:8px">Инстанцируется <code>player.tscn</code>, ему задаются <code>Name = id</code>, позиция и <code>PlayerId</code>, и он добавляется в контейнер <code>Players</code>. <strong>MultiplayerSpawner</strong> увидит нового ребёнка и позже реплицирует его каждому подключившемуся.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">5</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip both">Event</span></div>
+          <div class="api">Connected?.Invoke()  →  Main.EnterLobby()</div>
+          <p class="desc" style="margin-top:8px">Внутреннее C#-событие (не сеть) переводит UI хоста в экран лобби. Хост готов принимать подключения.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ 2. ПОДКЛЮЧЕНИЕ КЛИЕНТА ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">02</span><h2>Подключение клиента</h2></div>
+    <p class="sec-sub">Кнопка «Подключиться» → <code class="inl">JoinServer(ip)</code>. Тут появляются шаги «по сети»: они выделены пунктиром — данные реально уходят между машинами.</p>
+
+    <ol class="flow">
+      <li class="step">
+        <span class="badge">1</span>
+        <div class="card">
+          <div class="card-top"><span class="chip client">Client</span></div>
+          <div class="api">new ENetMultiplayerPeer().CreateClient(ip, Port)  →  Multiplayer.MultiplayerPeer = peer</div>
+          <p class="desc" style="margin-top:8px">Клиент открывает соединение. Handshake идёт асинхронно — метод возвращается сразу, результат придёт сигналом.</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">⇄</span>
+        <div class="card">
+          <div class="card-top"><span class="chip rpc">По сети</span><span class="chip both">ENet handshake</span></div>
+          <div class="api">signal: ConnectedToServer (у клиента) &nbsp;+&nbsp; PeerConnected(id) (у сервера)</div>
+          <p class="desc" style="margin-top:8px">Соединение установилось. Клиент получает <code>ConnectedToServer</code> → входит в лобби. Сервер получает <code>PeerConnected(id)</code> с новым peer id клиента.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">2</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip repl">Spawn</span></div>
+          <div class="api">OnPeerConnected(id) → SpawnPlayer(id)   <span style="color:var(--faint)">// только если игра не началась</span></div>
+          <p class="desc" style="margin-top:8px">Сервер спавнит узел игрока для нового клиента в <code>Players</code>. Если матч уже идёт — вместо спавна сервер шлёт клиенту <code>NotifyGameInProgress</code>, и тот возвращается в меню.</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">⇄</span>
+        <div class="card">
+          <div class="card-top"><span class="chip repl">MultiplayerSpawner</span><span class="chip rpc">По сети</span></div>
+          <div class="api">Spawner реплицирует всех Player-узлов новому клиенту</div>
+          <p class="desc" style="margin-top:8px">Spawner автоматически рассылает: у нового клиента появляются его собственный игрок <em>и</em> все уже существующие. Обратно — новый игрок появляется у всех остальных. Вручную ничего слать не нужно.</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">⇄</span>
+        <div class="card">
+          <div class="card-top"><span class="chip rpc">RPC</span><span class="chip server">Lobby</span></div>
+          <div class="api">RpcId(id, RegisterPlayer) · SyncFullLobbyTo(id) · Rpc(RegisterPlayer)</div>
+          <p class="desc" style="margin-top:8px">Сервер отправляет новому клиенту полный слепок лобби (имена + готовность), а остальным — сообщение «добавился игрок N». Список синхронизирован у всех.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout warn">
+      <span class="k">Обрыв</span>
+      <p class="b">Сигнал <code style="font-family:var(--mono)">PeerDisconnected</code> (у сервера) и <code style="font-family:var(--mono)">ServerDisconnected</code> (у клиентов) запускают обратный путь: сервер удаляет узел игрока — Spawner снимает его у всех; клиенты при падении хоста возвращаются в меню с причиной.</p>
+    </div>
+  </section>
+
+  <!-- ============ 3. СИНХРОНИЗАЦИЯ ИГРОКОВ ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">03</span><h2>Синхронизация игроков</h2></div>
+    <p class="sec-sub">Спавн решает Spawner, движение — Synchronizer. Разделяет их понятие <strong>authority</strong>: у каждого узла игрока владелец — peer этого игрока, и только он двигает свою модель.</p>
+
+    <div class="diagram">
+      <div class="rail">
+        <div class="node cli">
+          <div class="nt"><span class="dot client"></span>Владелец узла</div>
+          <div class="nd"><code class="inl">IsMultiplayerAuthority()</code> == true. Читает ввод, считает физику, пишет <code class="inl">position/rotation</code>.</div>
+        </div>
+        <div class="conn">→<small>Synchronizer<br>каждый тик</small></div>
+        <div class="node repl">
+          <div class="nt"><span class="dot repl"></span>MultiplayerSynchronizer</div>
+          <div class="nd">Забирает свойства из <code class="inl">SceneReplicationConfig</code> у владельца и рассылает их всем остальным peer'ам.</div>
+        </div>
+        <div class="conn">→<small>применяется</small></div>
+        <div class="node cli">
+          <div class="nt"><span class="dot client"></span>Все остальные</div>
+          <div class="nd">Authority == false. Ввод/физику <em>не</em> считают — просто принимают позицию и рисуют чужую модель.</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="prose" style="margin-top:24px">Что именно реплицируется, задано прямо в <code class="inl">player.tscn</code> в <code class="inl">SceneReplicationConfig</code>:</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Свойство</th><th>Режим</th><th>Когда передаётся</th></tr></thead>
+        <tbody>
+          <tr><td>position</td><td>Always</td><td>каждый сетевой тик — плавное движение у всех</td></tr>
+          <tr><td>rotation</td><td>Always</td><td>каждый тик — куда игрок смотрит</td></tr>
+          <tr><td>PlayerId</td><td>spawn</td><td>один раз при спавне (дальше не меняется)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <pre class="code"><span class="cm">// Player.cs — авторитет назначается уже ПОСЛЕ завершения спавна,</span>
+<span class="cm">// иначе SetMultiplayerAuthority падает с "no network ID".</span>
+<span class="kw">public override void</span> <span class="fn">_Ready</span>() {
+    <span class="fn">CallDeferred</span>(<span class="kw">nameof</span>(ApplyAuthority));   <span class="cm">// откладываем на кадр</span>
+}
+<span class="kw">private void</span> <span class="fn">ApplyAuthority</span>() {
+    <span class="fn">SetMultiplayerAuthority</span>(PlayerId);       <span class="cm">// рекурсивно → и на Synchronizer</span>
+    _camera.Current = <span class="fn">IsMultiplayerAuthority</span>();  <span class="cm">// своя камера только у себя</span>
+}
+
+<span class="kw">public override void</span> <span class="fn">_PhysicsProcess</span>(<span class="kw">double</span> delta) {
+    <span class="kw">if</span> (!<span class="fn">IsMultiplayerAuthority</span>()) <span class="kw">return</span>;   <span class="cm">// чужих не двигаем</span>
+    <span class="cm">// … WASD, гравитация, MoveAndSlide()</span>
+}</pre>
+
+    <div class="callout">
+      <span class="k">Момент</span>
+      <p class="b"><code style="font-family:var(--mono)">SetMultiplayerAuthority</code> вызывается на <strong>каждом</strong> peer (из <code style="font-family:var(--mono)">_Ready</code> спавненного узла) и рекурсивно охватывает дочерний Synchronizer — поэтому все машины согласованно знают, кто «владеет» этим игроком и от кого принимать его позицию.</p>
+    </div>
+  </section>
+
+  <!-- ============ 4. ЛОББИ / RPC ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">04</span><h2>Лобби и RPC: имена, готовность, старт</h2></div>
+    <p class="sec-sub">Список игроков — это не игровые узлы, а обычные данные. Их синхронизируют вручную через <strong>RPC</strong> (Remote Procedure Call) — вызов метода на другой машине. Тут важны два режима доступа и направление вызова.</p>
+
+    <div class="grid2">
+      <div class="node rpc">
+        <div class="nt"><span class="dot rpc"></span>RpcMode.AnyPeer</div>
+        <div class="nd">«Просьба» клиента серверу: <code class="inl">SetPlayerReady</code>, <code class="inl">SetPlayerName</code>. Клиент шлёт <code class="inl">RpcId(1, …)</code> — только серверу. Сервер проверяет <code class="inl">GetRemoteSenderId()</code> и решает.</div>
+      </div>
+      <div class="node rpc">
+        <div class="nt"><span class="dot rpc"></span>RpcMode.Authority</div>
+        <div class="nd">«Оглашение» сервера всем: <code class="inl">RegisterPlayer</code>, <code class="inl">SyncPlayerReady</code>, <code class="inl">GameStarting</code>. Вызвать вправе только сервер, выполняется у всех клиентов.</div>
+      </div>
+    </div>
+
+    <ol class="flow" style="margin-top:30px">
+      <li class="step">
+        <span class="badge">1</span>
+        <div class="card">
+          <div class="card-top"><span class="chip client">Client</span><span class="chip rpc">AnyPeer</span></div>
+          <div class="api">RpcId(1, nameof(SetPlayerReady), true)</div>
+          <p class="desc" style="margin-top:8px">Игрок нажал «Готов». Вызов адресован только серверу (peer 1).</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">2</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span></div>
+          <div class="api">id = GetRemoteSenderId();  _players[id].IsReady = true</div>
+          <p class="desc" style="margin-top:8px">Сервер — единственный источник правды — обновляет своё состояние. По <code>GetRemoteSenderId()</code> он знает, кто прислал.</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">⇄</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip rpc">Authority → все</span></div>
+          <div class="api">Rpc(nameof(SyncPlayerReady), id, true)</div>
+          <p class="desc" style="margin-top:8px">Сервер оглашает изменение всем клиентам, у каждого обновляется список → <code>LobbyUpdated</code> перерисовывает UI.</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">⇄</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip rpc">GameStarting</span></div>
+          <div class="api">StartGame() → Rpc(nameof(GameStarting))</div>
+          <p class="desc" style="margin-top:8px">Хост жмёт «Начать». RPC переводит всех в фазу <code>Gameplay</code> одновременно. Флаг <code>_isGameStarted</code> закрывает вход опоздавшим.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <!-- ============ 5. ПРЕДМЕТЫ НА КАРТЕ ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">05</span><h2>Предметы, лежащие на карте</h2></div>
+    <p class="sec-sub">Здесь выбор зависит от того, <strong>статичный</strong> предмет или <strong>динамический</strong>. Это разные механизмы Godot — важно не путать.</p>
+
+    <div class="grid2">
+      <div class="node repl">
+        <div class="nt"><span class="dot repl"></span>Статичный предмет</div>
+        <div class="nd">Лежит в <code class="inl">main.tscn</code> изначально (как <code class="inl">Wall</code>, <code class="inl">Ground</code>). Синхронизация <em>бесплатна</em>: каждый peer грузит одну и ту же сцену → предмет уже у всех. Сеть не нужна, пока он не меняется.</div>
+      </div>
+      <div class="node repl">
+        <div class="nt"><span class="dot repl"></span>Динамический предмет</div>
+        <div class="nd">Появляется/исчезает во время игры (лут, выпавший ключ). Нужен <strong>MultiplayerSpawner</strong> с этим предметом в списке spawnable — сервер добавляет узел, Spawner рассылает.</div>
+      </div>
+    </div>
+
+    <p class="prose" style="margin-top:26px"><strong>Рецепт для подбираемого предмета</strong> (по образцу игроков):</p>
+
+    <ol class="flow">
+      <li class="step">
+        <span class="badge">1</span>
+        <div class="card">
+          <div class="card-top"><span class="chip both">Setup</span><span class="chip repl">Spawner</span></div>
+          <div class="api">MultiplayerSpawner.AddSpawnableScene("res://…/item.tscn")</div>
+          <p class="desc" style="margin-top:8px">Регистрируем сцену предмета как spawnable — на отдельном спавнере или на существующем с нужным <code>spawn_path</code>.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">2</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip repl">Spawn</span></div>
+          <div class="api">itemsNode.AddChild(item, true)   <span style="color:var(--faint)">// только на сервере</span></div>
+          <p class="desc" style="margin-top:8px">Предмет спавнит <strong>только сервер</strong>. Spawner реплицирует его всем. Начальную позицию везёт <code>SceneReplicationConfig</code> (spawn=true).</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">⇄</span>
+        <div class="card">
+          <div class="card-top"><span class="chip client">Client</span><span class="chip rpc">AnyPeer</span></div>
+          <div class="api">RpcId(1, nameof(RequestPickup), itemId)</div>
+          <p class="desc" style="margin-top:8px">Игрок «подобрал» — но не удаляет узел сам, а <em>просит</em> сервер. Иначе предмет исчезнет у одного и останется у других (рассинхрон).</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">⇄</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip repl">Despawn</span></div>
+          <div class="api">item.QueueFree()   <span style="color:var(--faint)">// на сервере → Spawner снимает у всех</span></div>
+          <p class="desc" style="margin-top:8px">Сервер проверяет (успел ли кто раньше, в радиусе ли игрок) и удаляет узел. Spawner автоматически убирает предмет на всех клиентах.</p>
+        </div>
+      </li>
+    </ol>
+
+    <div class="callout">
+      <span class="k">Правило</span>
+      <p class="b"><strong>Спавнит и деспавнит только сервер.</strong> Клиент всегда действует через запрос (<code style="font-family:var(--mono)">AnyPeer</code>-RPC серверу). Состояние (кол-во патронов, открыт ли сундук) держите в свойстве под <code style="font-family:var(--mono)">MultiplayerSynchronizer</code> или синхронизируйте <code style="font-family:var(--mono)">Authority</code>-RPC.</p>
+    </div>
+  </section>
+
+  <!-- ============ 6. ЛОМАЕМЫЕ СТЕНЫ ============ -->
+  <section>
+    <div class="sec-head"><span class="sec-num">06</span><h2>Ломаемая стена — «сломалось у всех»</h2></div>
+    <p class="sec-sub">Сейчас <code class="inl">wall.tscn</code> — статичный <code class="inl">StaticBody3D</code> без скрипта: одинаков у всех, но сломать нельзя. Чтобы разрушение отражалось у всех, добавляем стене состояние и проводим удар через сервер. Классический путь «клиент просит → сервер решает → сервер оглашает».</p>
+
+    <div class="diagram">
+      <div class="rail">
+        <div class="node cli">
+          <div class="nt"><span class="dot client"></span>Удар</div>
+          <div class="nd">Игрок-authority бьёт стену. <strong>Не</strong> меняет её локально — шлёт запрос.</div>
+        </div>
+        <div class="conn">→<small>RpcId(1)<br>запрос</small></div>
+        <div class="node srv">
+          <div class="nt"><span class="dot server"></span>Сервер</div>
+          <div class="nd">Единственный, кто считает HP: <code class="inl">Health -= dmg</code>. Проверяет читы/дистанцию.</div>
+        </div>
+        <div class="conn">→<small>Rpc()<br>всем</small></div>
+        <div class="node cli">
+          <div class="nt"><span class="dot client"></span>Все клиенты</div>
+          <div class="nd">Принимают новое HP / факт разрушения → проигрывают эффект, убирают коллизию.</div>
+        </div>
+      </div>
+    </div>
+
+    <ol class="flow" style="margin-top:30px">
+      <li class="step wire">
+        <span class="badge">1</span>
+        <div class="card">
+          <div class="card-top"><span class="chip client">Client</span><span class="chip rpc">AnyPeer → сервер</span></div>
+          <div class="api">RpcId(1, nameof(RequestHit), wallPath, damage)</div>
+          <p class="desc" style="margin-top:8px">Атакующий сообщает серверу «я ударил вот эту стену». Локально стена пока не меняется — ждём решения сервера, чтобы не разошлось.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">2</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span></div>
+          <div class="api">Health -= damage;  bool broken = Health &lt;= 0;</div>
+          <p class="desc" style="margin-top:8px">Сервер — источник правды по HP. Валидирует (жива ли стена, в радиусе ли игрок), решает, разрушена ли она. Клиенты этот расчёт не делают.</p>
+        </div>
+      </li>
+      <li class="step wire">
+        <span class="badge">3</span>
+        <div class="card">
+          <div class="card-top"><span class="chip server">Host</span><span class="chip rpc">Authority → все</span></div>
+          <div class="api">Rpc(nameof(ApplyDamage), Health);  if (broken) Rpc(nameof(Break));</div>
+          <p class="desc" style="margin-top:8px">Сервер оглашает результат всем (включая себя). RPC помечен <code>CallLocal</code>, чтобы разрушение сыграло и у хоста.</p>
+        </div>
+      </li>
+      <li class="step">
+        <span class="badge">4</span>
+        <div class="card">
+          <div class="card-top"><span class="chip client">Все</span><span class="chip both">Одинаково</span></div>
+          <div class="api">CollisionShape.Disabled = true;  Mesh.Visible = false;  spawn debris</div>
+          <p class="desc" style="margin-top:8px">Каждый peer применяет один и тот же эффект. Стена исчезает синхронно у всех — потому что команда пришла из одного места.</p>
+        </div>
+      </li>
+    </ol>
+
+    <pre class="code"><span class="cm">// Wall.cs — набросок. Стене нужен скрипт + сетевой id узла.</span>
+<span class="at">[Rpc(</span>MultiplayerApi.RpcMode.AnyPeer<span class="at">)]</span>          <span class="cm">// зовёт клиент → у сервера</span>
+<span class="kw">private void</span> <span class="fn">RequestHit</span>(<span class="kw">int</span> damage) {
+    <span class="kw">if</span> (!<span class="fn">Multiplayer</span>.IsServer()) <span class="kw">return</span>;
+    Health -= damage;
+    <span class="fn">Rpc</span>(<span class="kw">nameof</span>(ApplyDamage), Health);        <span class="cm">// огласить всем</span>
+    <span class="kw">if</span> (Health &lt;= 0) <span class="fn">Rpc</span>(<span class="kw">nameof</span>(Break));
+}
+
+<span class="at">[Rpc(</span>MultiplayerApi.RpcMode.Authority, CallLocal = <span class="kw">true</span><span class="at">)]</span>  <span class="cm">// сервер → все + сам</span>
+<span class="kw">private void</span> <span class="fn">Break</span>() {
+    _collision.Disabled = <span class="kw">true</span>;
+    _mesh.Visible = <span class="kw">false</span>;
+    <span class="cm">// … частицы обломков, звук</span>
+}</pre>
+
+    <div class="grid2" style="margin-top:26px">
+      <div class="callout" style="margin-top:0">
+        <span class="k">RPC или Sync?</span>
+        <p class="b"><strong>RPC</strong> — для событий («сломалась сейчас»). <strong>MultiplayerSynchronizer</strong> — для непрерывного состояния (полоска HP, доля трещин). Для стены обычно хватает RPC-события + опционально синхронизации HP, чтобы опоздавшие увидели уже подбитую стену.</p>
+      </div>
+      <div class="callout warn" style="margin-top:0">
+        <span class="k">Опоздавшие</span>
+        <p class="b">Чистый RPC получают <strong>только те, кто в сети сейчас</strong>. Если стену можно сломать до входа игрока — держите <code style="font-family:var(--mono)">Health</code>/<code style="font-family:var(--mono)">IsBroken</code> в синхронизируемом свойстве, тогда состояние приедет при спавне/входе.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ REFERENCE ============ -->
+  <section style="border-bottom:none">
+    <div class="sec-head"><span class="sec-num">07</span><h2>Шпаргалка по Godot API</h2></div>
+    <p class="sec-sub">Что за инструмент, за что отвечает и где используется в проекте.</p>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>API</th><th>Роль</th><th>Где в проекте</th></tr></thead>
+        <tbody>
+          <tr><td>ENetMultiplayerPeer</td><td>Транспорт (UDP/ENet). CreateServer / CreateClient</td><td>NetworkManager.CreateHost / JoinServer</td></tr>
+          <tr><td>Multiplayer.MultiplayerPeer</td><td>Активирует High-Level API. Присвоил — сеть «живая»</td><td>оба метода подключения</td></tr>
+          <tr><td>Multiplayer.IsServer()</td><td>Проверка «я сервер?» (авторитет)</td><td>везде, где решение принимает сервер</td></tr>
+          <tr><td>GetUniqueId() / GetRemoteSenderId()</td><td>Свой peer id / кто прислал RPC</td><td>SpawnPlayer, SetPlayerReady/Name</td></tr>
+          <tr><td>signal PeerConnected / Disconnected</td><td>Кто-то вошёл/вышел (у сервера)</td><td>NetworkManager, LobbyManager</td></tr>
+          <tr><td>signal ConnectedToServer / ServerDisconnected</td><td>Соединился / хост упал (у клиента)</td><td>NetworkManager → события в Main</td></tr>
+          <tr><td>MultiplayerSpawner</td><td>Авто-репликация появления/удаления узлов</td><td>main.tscn → контейнер Players</td></tr>
+          <tr><td>MultiplayerSynchronizer</td><td>Авто-репликация свойств узла по тикам</td><td>player.tscn → position/rotation</td></tr>
+          <tr><td>SetMultiplayerAuthority()</td><td>Кто «владелец» узла (пишет состояние)</td><td>Player.ApplyAuthority</td></tr>
+          <tr><td>IsMultiplayerAuthority()</td><td>«Это мой узел?» — гейт ввода/физики</td><td>Player._Input / _PhysicsProcess</td></tr>
+          <tr><td>[Rpc(AnyPeer)] + RpcId(1, …)</td><td>Клиент просит сервер</td><td>SetPlayerReady, SetPlayerName</td></tr>
+          <tr><td>[Rpc(Authority)] + Rpc(…)</td><td>Сервер оглашает всем</td><td>RegisterPlayer, SyncPlayerReady, GameStarting</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="foot">The Escape Game · схема отражает текущий код (NetworkManager, LobbyManager, Player, player.tscn, main.tscn). Разделы 05–06 — проектный рецепт: предметов-пикапов и ломаемых стен в коде пока нет.</p>
+  </section>
+
+</div>
+</body>
+</html>
