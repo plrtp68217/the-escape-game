@@ -6,10 +6,7 @@ public partial class Player : CharacterBody3D
 	[Export] public int FallAcceleration { get; set; } = 75;
 	[Export] public int JumpImpulse { get; set; } = 20;
 	[Export] public float MouseSensitivity { get; set; } = 0.002f;
-
-	[Export] public int PlayerId = 1;
-
-	private int _playerId = 1;
+	[Export] public int PlayerId { get; set; } = 1;
 
 	private Vector3 _targetVelocity = Vector3.Zero;
 	private Node3D _pivot;
@@ -17,27 +14,28 @@ public partial class Player : CharacterBody3D
 
 	public override void _Ready()
 	{
-		if (PlayerId > 0)
-		{
-			SetMultiplayerAuthority(PlayerId);
-		}
-
 		_pivot = GetNode<Node3D>("Pivot");
 		_camera = GetNode<Camera3D>("Pivot/Camera3D");
 
-		if (_pivot == null)
-		{
-			GD.PrintErr("Player Pivot node for Camera not found!");
-		}
+		// Нельзя менять multiplayer authority прямо в _Ready() — движок в этот
+		// момент ещё не закончил синхронизацию заспавненного узла (MultiplayerSynchronizer
+		// ещё обрабатывает "pending spawn"), и SetMultiplayerAuthority здесь падает
+		// с ошибкой "no network ID". Поэтому откладываем через CallDeferred —
+		// вызов выполнится, когда спавн полностью завершится и PlayerId уже
+		// будет корректно реплицирован на этот пир.
+		CallDeferred(nameof(ApplyAuthority));
+	}
 
-		// Камера должна быть активна только у "своего" игрока на этом клиенте,
-		// иначе у всех клиентов будет дёргаться картинка между камерами.
+	private void ApplyAuthority()
+	{
+		SetMultiplayerAuthority(PlayerId);
+
 		_camera.Current = IsMultiplayerAuthority();
 	}
 
 	public override void _Input(InputEvent @event)
 	{
-		if (!IsMultiplayerAuthority())
+		if (IsMultiplayerAuthority() == false)
 		{
 			return;
 		}
@@ -57,7 +55,7 @@ public partial class Player : CharacterBody3D
 
 	public override void _PhysicsProcess(double delta)
 	{
-		if (!IsMultiplayerAuthority())
+		if (IsMultiplayerAuthority() == false)
 		{
 			return;
 		}
