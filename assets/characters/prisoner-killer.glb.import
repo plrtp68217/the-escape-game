@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://drvd5x1blffvp"
-path="res://.godot/imported/sanitar.glb-66ea38b97847dbd2099ebfb6a66e138a.scn"
+uid="uid://bmiy3gxk6da1l"
+path="res://.godot/imported/prisoner-killer.glb-ef91b6344041087e8e4d6f7e01debe42.scn"
 
 [deps]
 
-source_file="res://assets/characters/sanitar.glb"
-dest_files=["res://.godot/imported/sanitar.glb-66ea38b97847dbd2099ebfb6a66e138a.scn"]
+source_file="res://assets/characters/prisoner-killer.glb"
+dest_files=["res://.godot/imported/prisoner-killer.glb-ef91b6344041087e8e4d6f7e01debe42.scn"]
 
 [params]
 
