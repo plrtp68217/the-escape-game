@@ -13,10 +13,39 @@ public static class G
     public const string DefaultAddress = "127.0.0.1";
 
     // Player movement defaults
-    public const int Speed = 10;
-    public const int FallAcceleration = 75;
-    public const int JumpImpulse = 20;
+    public const float Speed = 10f;
+    public const float MoveAcceleration = 80f;
+    public const float MoveDeceleration = 60f;
+    public const float AirAcceleration = 8f;
+    public const float FallAcceleration = 75f;
+    public const float JumpImpulse = 20f;
     public const float MouseSensitivity = 0.002f;
+    public const float GravityScaleDown = 1.6f;
+    public const float GravityScaleUp = 1.0f;
+
+    // Camera effects
+    public static class Camera
+    {
+        // Частота покачивания камеры при ходьбе: чем больше значение,
+        // тем быстрее шаги.
+        public const float BobFrequency = 1f;
+
+        // Амплитуда покачивания: высота вертикального смещения камеры
+        // вверх-вниз при каждом шаге.
+        public const float BobAmplitude = 0.1f;
+
+        // Максимальный наклон камеры вбок при стрейфе. Положительное
+        // значение — наклон в сторону движения, отрицательное — против.
+        public const float StrafeTilt = 0.01f;
+
+        // Сила толчка камеры вниз при приземлении. Умножается на скорость
+        // падения, поэтому чем выше падение, тем заметнее эффект.
+        public const float LandingImpact = 0.05f;
+
+        // Скорость, с которой камера возвращается в исходное положение
+        // после приземления. Больше значение — быстрее отскок.
+        public const float LandingRecovery = 10f;
+    }
 
     // Spawn
     public static readonly Vector3 SpawnPosition = new(0, 1, 0);

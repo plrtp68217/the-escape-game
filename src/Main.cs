@@ -8,13 +8,13 @@ namespace EscapeGame;
 /// </summary>
 public partial class Main : Node3D
 {
-    public override void _Ready()
-    {
-        var uiManager = new UI.UIManager { Name = "UIManager" };
-        AddChild(uiManager);
+	public override void _Ready()
+	{
+		var uiManager = new UI.UIManager { Name = "UIManager" };
+		AddChild(uiManager);
 
-        var gameFlow = new GameFlow { Name = "GameFlow" };
-        gameFlow.Initialize(uiManager);
-        AddChild(gameFlow);
-    }
+		var gameFlow = new GameFlow { Name = "GameFlow" };
+		gameFlow.Initialize(uiManager);
+		AddChild(gameFlow);
+	}
 }

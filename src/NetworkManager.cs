@@ -127,7 +127,7 @@ public partial class NetworkManager : Node
 	private void SpawnPlayer(int id)
 	{
 		var scene = GD.Load<PackedScene>(PlayerScenePath);
-		var player = scene.Instantiate<Player>();
+		var player = scene.Instantiate<PlayerController>();
 
 		player.Name = id.ToString();
 		player.Position = G.SpawnPosition;
