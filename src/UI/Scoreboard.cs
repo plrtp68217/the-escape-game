@@ -1,5 +1,6 @@
-using Godot;
+using System;
 using System.Linq;
+using Godot;
 
 namespace EscapeGame.UI;
 
@@ -9,44 +10,55 @@ namespace EscapeGame.UI;
 /// </summary>
 public partial class Scoreboard : Control
 {
-	private Label _playerListLabel;
+    private Label _playerListLabel;
+    private Func<bool> _visibilitySource;
 
-	public override void _Ready()
-	{
-		_playerListLabel = GetNode<Label>("Panel/VBoxContainer/PlayerListLabel");
-		Visible = false;
+    public override void _Ready()
+    {
+        _playerListLabel = GetNode<Label>("Panel/VBoxContainer/PlayerListLabel");
+        Visible = false;
 
-		LobbyManager.Instance.LobbyUpdated += Refresh;
-		Refresh();
-	}
+        LobbyManager.Instance.LobbyUpdated += Refresh;
+        Refresh();
+    }
 
-	public override void _ExitTree()
-	{
-		if (LobbyManager.Instance != null)
-		{
-			LobbyManager.Instance.LobbyUpdated -= Refresh;
-		}
-	}
+    public override void _ExitTree()
+    {
+        if (LobbyManager.Instance != null)
+        {
+            LobbyManager.Instance.LobbyUpdated -= Refresh;
+        }
+    }
 
-	// Показать/скрыть табло (вызывается из Main по нажатию TAB).
-	public void SetShown(bool shown)
-	{
-		if (shown)
-		{
-			Refresh();
-		}
+    public void SetVisibilitySource(Func<bool> source)
+    {
+        _visibilitySource = source;
+    }
 
-		Visible = shown;
-	}
+    public override void _Input(InputEvent @event)
+    {
+        if (@event is not InputEventKey key || key.Keycode != G.ScoreboardKey || key.Echo)
+        {
+            return;
+        }
 
-	private void Refresh()
-	{
-		var lines = LobbyManager.Instance.Players.Values
-			.Select(p => p.Name)
-			.ToArray();
+        bool canShow = _visibilitySource?.Invoke() ?? false;
 
-		_playerListLabel.Text = lines.Length > 0
-			? string.Join("\n", lines)
-			: G.Messages.NoPlayers;
-	}
+        if (key.Pressed && canShow)
+        {
+            Refresh();
+            Visible = true;
+        }
+        else if (!key.Pressed)
+        {
+            Visible = false;
+        }
+    }
+
+    private void Refresh()
+    {
+        var lines = LobbyManager.Instance.Players.Values.Select(p => p.Name).ToArray();
+
+        _playerListLabel.Text = lines.Length > 0 ? string.Join("\n", lines) : G.Messages.NoPlayers;
+    }
 }

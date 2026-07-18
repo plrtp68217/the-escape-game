@@ -1,12 +1,11 @@
-using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Godot;
 
 namespace EscapeGame;
 
 /// <summary>
-/// Autoload-синглтон, управляющий игровым лобби.
 /// Хранит список игроков, их готовность и инициирует старт игры.
 /// Авторитет сервера.
 /// </summary>
@@ -111,14 +110,25 @@ public partial class LobbyManager : Node
         }
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    [Rpc(
+        MultiplayerApi.RpcMode.Authority,
+        TransferMode = MultiplayerPeer.TransferModeEnum.Reliable
+    )]
     private void RegisterPlayer(long id, string name)
     {
-        _players[id] = new LobbyPlayerInfo { Id = id, Name = name, IsReady = false };
+        _players[id] = new LobbyPlayerInfo
+        {
+            Id = id,
+            Name = name,
+            IsReady = false
+        };
         LobbyUpdated?.Invoke();
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    [Rpc(
+        MultiplayerApi.RpcMode.Authority,
+        TransferMode = MultiplayerPeer.TransferModeEnum.Reliable
+    )]
     private void UnregisterPlayer(long id)
     {
         _players.Remove(id);
@@ -152,7 +162,10 @@ public partial class LobbyManager : Node
         }
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    [Rpc(
+        MultiplayerApi.RpcMode.Authority,
+        TransferMode = MultiplayerPeer.TransferModeEnum.Reliable
+    )]
     private void UpdatePlayerName(long id, string name)
     {
         if (_players.TryGetValue(id, out var info))
@@ -184,7 +197,10 @@ public partial class LobbyManager : Node
         }
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    [Rpc(
+        MultiplayerApi.RpcMode.Authority,
+        TransferMode = MultiplayerPeer.TransferModeEnum.Reliable
+    )]
     private void SyncPlayerReady(long id, bool ready)
     {
         if (_players.TryGetValue(id, out var info))
@@ -194,14 +210,20 @@ public partial class LobbyManager : Node
         }
     }
 
-    [Rpc(MultiplayerApi.RpcMode.Authority, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    [Rpc(
+        MultiplayerApi.RpcMode.Authority,
+        TransferMode = MultiplayerPeer.TransferModeEnum.Reliable
+    )]
     private void GameStarting()
     {
         GameStarted?.Invoke();
     }
 
     // Сервер вызывает у позднего клиента, чтобы сообщить, что игра уже идёт.
-    [Rpc(MultiplayerApi.RpcMode.Authority, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    [Rpc(
+        MultiplayerApi.RpcMode.Authority,
+        TransferMode = MultiplayerPeer.TransferModeEnum.Reliable
+    )]
     private void NotifyGameInProgress()
     {
         JoinRejectedGameInProgress?.Invoke();

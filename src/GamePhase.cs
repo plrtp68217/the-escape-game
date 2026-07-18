@@ -5,8 +5,8 @@ namespace EscapeGame;
 /// </summary>
 public enum GamePhase
 {
-    MainMenu,
-    Lobby,
-    Gameplay,
-    Paused
+	MainMenu,
+	Lobby,
+	Gameplay,
+	Paused
 }

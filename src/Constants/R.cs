@@ -9,24 +9,20 @@ public static class R
 {
     // Scenes
     public const string PlayerScene = "res://scenes/player.tscn";
+    public const string UIRootScene = "res://scenes/ui/ui_root.tscn";
 
     // Runtime scene node paths
     public static readonly NodePath PlayersContainer = "/root/Main/Players";
+    public static readonly NodePath UIRoot = "/root/Main/UIRoot";
 
-    // UI node paths inside Main.tscn
+    // UI node paths inside ui_root.tscn
     public static class UI
     {
-        public static readonly NodePath PauseMenu = "UserInterface/PauseMenu";
-        public static readonly NodePath PauseLeaveButton = "UserInterface/PauseMenu/LeaveButton";
-        public static readonly NodePath TipLabel = "UserInterface/TipLabel";
-        public static readonly NodePath NetworkMenu = "UserInterface/NetworkMenu";
-        public static readonly NodePath NameInput = "UserInterface/NetworkMenu/VBoxContainer/NameInput";
-        public static readonly NodePath IpInput = "UserInterface/NetworkMenu/VBoxContainer/IpInput";
-        public static readonly NodePath StatusLabel = "UserInterface/NetworkMenu/VBoxContainer/StatusLabel";
-        public static readonly NodePath HostButton = "UserInterface/NetworkMenu/VBoxContainer/HostButton";
-        public static readonly NodePath JoinButton = "UserInterface/NetworkMenu/VBoxContainer/JoinButton";
-        public static readonly NodePath LobbyMenu = "UserInterface/LobbyMenu";
-        public static readonly NodePath Scoreboard = "UserInterface/Scoreboard";
+        public static readonly NodePath TipLabel = "TipLabel";
+        public static readonly NodePath MainMenu = "MainMenu";
+        public static readonly NodePath LobbyMenu = "LobbyMenu";
+        public static readonly NodePath PauseMenu = "PauseMenu";
+        public static readonly NodePath Scoreboard = "Scoreboard";
     }
 
     // Character assets

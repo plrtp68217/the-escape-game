@@ -1,0 +1,29 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/UI/ScreenManager.cs" id="1_sm"]
+[ext_resource type="PackedScene" path="res://scenes/ui/main_menu.tscn" id="2_main"]
+[ext_resource type="PackedScene" path="res://scenes/ui/lobby_menu.tscn" id="3_lobby"]
+[ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="4_pause"]
+[ext_resource type="PackedScene" path="res://scenes/ui/scoreboard.tscn" id="5_score"]
+
+[node name="UIRoot" type="CanvasLayer"]
+script = ExtResource("1_sm")
+
+[node name="MainMenu" parent="." instance=ExtResource("2_main")]
+
+[node name="LobbyMenu" parent="." instance=ExtResource("3_lobby")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("4_pause")]
+
+[node name="Scoreboard" parent="." instance=ExtResource("5_score")]
+
+[node name="TipLabel" type="Label" parent="."]
+visible = false
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 16.0
+offset_top = 8.0
+offset_right = 228.0
+offset_bottom = 31.0
+theme_override_colors/font_color = Color(0, 0, 0, 1)
+text = "Press [ESC] to visible Mouse"
