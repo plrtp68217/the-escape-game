@@ -8,5 +8,6 @@ public enum GamePhase
 	MainMenu,
 	Lobby,
 	Gameplay,
-	Paused
+	Paused,
+	Inventory
 }

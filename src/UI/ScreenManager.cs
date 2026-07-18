@@ -7,17 +7,19 @@ namespace EscapeGame.UI;
 /// </summary>
 public partial class ScreenManager : CanvasLayer
 {
-	public Control MainMenuScreen { get; private set; }
-	public Control LobbyScreen { get; private set; }
-	public Control PauseScreen { get; private set; }
-	public Control ScoreboardScreen { get; private set; }
+	private Control _mainMenuScreen;
+	private Control _lobbyScreen;
+	private Control _pauseScreen;
+	private Control _scoreboardScreen;
+	private Control _inventoryScreen;
 
 	public override void _Ready()
 	{
-		MainMenuScreen = GetNodeOrNull<Control>("MainMenu");
-		LobbyScreen = GetNodeOrNull<Control>("LobbyMenu");
-		PauseScreen = GetNodeOrNull<Control>("PauseMenu");
-		ScoreboardScreen = GetNodeOrNull<Control>("Scoreboard");
+		_mainMenuScreen = GetNodeOrNull<Control>("MainMenu");
+		_lobbyScreen = GetNodeOrNull<Control>("LobbyMenu");
+		_pauseScreen = GetNodeOrNull<Control>("PauseMenu");
+		_scoreboardScreen = GetNodeOrNull<Control>("Scoreboard");
+		_inventoryScreen = GetNodeOrNull<Control>("Inventory");
 
 		GameState.PhaseChanged += OnPhaseChanged;
 		OnPhaseChanged();
@@ -32,10 +34,11 @@ public partial class ScreenManager : CanvasLayer
 	{
 		var phase = GameState.CurrentPhase;
 
-		SetScreen(MainMenuScreen, phase == GamePhase.MainMenu);
-		SetScreen(LobbyScreen, phase == GamePhase.Lobby);
-		SetScreen(PauseScreen, phase == GamePhase.Paused);
-		SetScreen(ScoreboardScreen, false);
+		SetScreen(_mainMenuScreen, phase == GamePhase.MainMenu);
+		SetScreen(_lobbyScreen, phase == GamePhase.Lobby);
+		SetScreen(_pauseScreen, phase == GamePhase.Paused);
+		SetScreen(_inventoryScreen, phase == GamePhase.Inventory);
+		SetScreen(_scoreboardScreen, false);
 	}
 
 	private static void SetScreen(Control screen, bool visible)

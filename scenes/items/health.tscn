@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://cmpx083xfrj8e"]
+
+[ext_resource type="Script" uid="uid://br0gpbf83fwtw" path="res://src/Inventory/WorldItem.cs" id="1_wi"]
+[ext_resource type="PackedScene" uid="uid://cf0634owtafep" path="res://assets/items/Health.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_health"]
+size = Vector3(0.87877196, 0.85361326, 0.37578124)
+
+[node name="Health" type="Area3D" unique_id=1364604051]
+script = ExtResource("1_wi")
+ItemId = "health"
+Count = null
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=984476087]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0031188726, 0.27680665, -0.0072265565)
+shape = SubResource("BoxShape3D_health")
+
+[node name="Model" parent="." unique_id=173795920 instance=ExtResource("2_model")]

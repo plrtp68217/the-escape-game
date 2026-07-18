@@ -1,0 +1,19 @@
+[gd_scene format=3 uid="uid://bv5sf1t3vi2q8"]
+
+[ext_resource type="Script" uid="uid://br0gpbf83fwtw" path="res://src/Inventory/WorldItem.cs" id="1_wi"]
+[ext_resource type="PackedScene" uid="uid://chp10fltqja8i" path="res://assets/items/Pill.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_pill"]
+size = Vector3(0.15, 0.254541, 0.15)
+
+[node name="Pill" type="Area3D" unique_id=317984473]
+script = ExtResource("1_wi")
+ItemId = "pill"
+Count = null
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2108546939]
+transform = Transform3D(0.125, 0, 0, 0, 0.125, 0, 0, 0, 0.125, 0, 0.0031005852, 0)
+shape = SubResource("BoxShape3D_pill")
+
+[node name="Pill" parent="." unique_id=2029916142 instance=ExtResource("2_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0005670786, 0.0008280277, 0.00029393286)

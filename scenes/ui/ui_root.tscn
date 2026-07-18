@@ -5,6 +5,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/lobby_menu.tscn" id="3_lobby"]
 [ext_resource type="PackedScene" path="res://scenes/ui/pause_menu.tscn" id="4_pause"]
 [ext_resource type="PackedScene" path="res://scenes/ui/scoreboard.tscn" id="5_score"]
+[ext_resource type="PackedScene" path="res://scenes/ui/inventory.tscn" id="6_inv"]
 
 [node name="UIRoot" type="CanvasLayer"]
 script = ExtResource("1_sm")
@@ -17,7 +18,9 @@ script = ExtResource("1_sm")
 
 [node name="Scoreboard" parent="." instance=ExtResource("5_score")]
 
-[node name="TipLabel" type="Label" parent="."]
+[node name="Inventory" parent="." instance=ExtResource("6_inv")]
+
+[node name="TipLabel" type="Label" parent="."]]
 visible = false
 anchors_preset = 10
 anchor_right = 1.0

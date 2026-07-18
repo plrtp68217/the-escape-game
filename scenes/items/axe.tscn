@@ -1,0 +1,18 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/Inventory/WorldItem.cs" id="1_wi"]
+[ext_resource type="PackedScene" path="res://assets/items/Axe.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_axe"]
+size = Vector3(0.30339354, 0.759021, 0.2)
+
+[node name="Axe" type="Area3D" unique_id=1127091888]
+script = ExtResource("1_wi")
+ItemId = "axe"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2117915212]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.04830323, 0.17700805, 0)
+shape = SubResource("BoxShape3D_axe")
+
+[node name="Model" parent="." unique_id=1667142226 instance=ExtResource("2_model")]
+transform = Transform3D(0.235, 0, 0, 0, 0.235, 0, 0, 0, 0.235, 0, 0, 0)

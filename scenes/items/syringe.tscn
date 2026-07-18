@@ -1,0 +1,17 @@
+[gd_scene format=3 uid="uid://fvl8hmec3kfv"]
+
+[ext_resource type="Script" uid="uid://br0gpbf83fwtw" path="res://src/Inventory/WorldItem.cs" id="1_wi"]
+[ext_resource type="PackedScene" uid="uid://ckyehtvd2n080" path="res://assets/items/Syringe.glb" id="2_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_syringe"]
+size = Vector3(0.15, 0.4, 0.15)
+
+[node name="Syringe" type="Area3D" unique_id=1358906456]
+script = ExtResource("1_wi")
+ItemId = "syringe"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=898155292]
+shape = SubResource("BoxShape3D_syringe")
+
+[node name="Model" parent="." unique_id=690926951 instance=ExtResource("2_model")]
+transform = Transform3D(0.25, 0, 0, 0, 0.25, 0, 0, 0, 0.25, 0, 0, 0)

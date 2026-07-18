@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Godot;
+using Inv = EscapeGame.Inventory;
 
 namespace EscapeGame;
 
@@ -34,16 +36,30 @@ public partial class PlayerController : CharacterBody3D
 	[Export]
 	public int PlayerId { get; set; } = 1;
 
+	public static PlayerController LocalPlayer { get; private set; }
+	public static readonly Dictionary<long, PlayerController> AllPlayers = new();
+
+	public Inv.PlayerInventory Inventory { get; private set; }
+	public event System.Action InventoryChanged;
+
+	public List<Inv.WorldItem> NearbyItems { get; } = new();
+
+	private Inv.WorldItem _targetItem;
 	private Vector3 _targetVelocity = Vector3.Zero;
 	private Node3D _pivot;
 	private Camera3D _camera;
+	private Marker3D _hand;
 	private CameraEffects _cameraEffects;
 
 	public override void _Ready()
 	{
 		_pivot = GetNode<Node3D>("Pivot");
 		_camera = GetNode<Camera3D>("Pivot/Camera3D");
+		_hand = GetNode<Marker3D>("Pivot/Hand");
 		_cameraEffects = new CameraEffects(_camera);
+
+		Inventory = new Inv.PlayerInventory(4, 4);
+		AllPlayers[PlayerId] = this;
 
 		// Нельзя менять multiplayer authority прямо в _Ready() — движок в этот
 		// момент ещё не закончил синхронизацию заспавненного узла (MultiplayerSynchronizer
@@ -54,16 +70,220 @@ public partial class PlayerController : CharacterBody3D
 		CallDeferred(nameof(ApplyAuthority));
 	}
 
+	public override void _ExitTree()
+	{
+		AllPlayers.Remove(PlayerId);
+
+		if (LocalPlayer == this)
+		{
+			LocalPlayer = null;
+		}
+	}
+
 	private void ApplyAuthority()
 	{
 		SetMultiplayerAuthority(PlayerId);
 
 		_camera.Current = IsMultiplayerAuthority();
+
+		if (IsMultiplayerAuthority())
+		{
+			LocalPlayer = this;
+		}
+
+		if (Multiplayer.IsServer())
+		{
+			// Тестовое наполнение инвентаря для проверки UI.
+			Inventory.AddItem(Inv.ItemDatabase.Get("axe"), 1);
+			Inventory.AddItem(Inv.ItemDatabase.Get("health"), 3);
+			Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 2);
+
+			Inv.InventoryRelay.Instance?.Rpc(nameof(Inv.InventoryRelay.SyncInventory), (long)PlayerId,
+				PackIds(), PackCounts(), Inventory.EquippedSlotIndex);
+		}
+	}
+
+	public void UpdateInventory(string[] itemIds, int[] counts, int equippedIndex)
+	{
+		for (int i = 0; i < Inventory.Slots.Count && i < itemIds.Length && i < counts.Length; i++)
+		{
+			Inv.InventorySlot slot = Inventory.Slots[i];
+			string id = itemIds[i];
+
+			if (string.IsNullOrEmpty(id))
+			{
+				slot.Clear();
+			}
+			else
+			{
+				Inv.InventoryItem item = Inv.ItemDatabase.Get(id);
+				slot.Set(item, counts[i]);
+			}
+		}
+
+		Inventory.TryEquip(equippedIndex);
+
+		RefreshEquippedModel();
+		InventoryChanged?.Invoke();
+	}
+
+	private string[] PackIds()
+	{
+		string[] ids = new string[Inventory.Slots.Count];
+		for (int i = 0; i < ids.Length; i++)
+		{
+			ids[i] = Inventory.Slots[i].Item?.Id ?? string.Empty;
+		}
+		return ids;
+	}
+
+	private int[] PackCounts()
+	{
+		int[] counts = new int[Inventory.Slots.Count];
+		for (int i = 0; i < counts.Length; i++)
+		{
+			counts[i] = Inventory.Slots[i].Count;
+		}
+		return counts;
+	}
+
+	public void RegisterNearbyItem(Inv.WorldItem item)
+	{
+		if (!IsMultiplayerAuthority())
+		{
+			return;
+		}
+
+		if (!NearbyItems.Contains(item))
+		{
+			NearbyItems.Add(item);
+			UpdateTargetItem();
+		}
+	}
+
+	public void UnregisterNearbyItem(Inv.WorldItem item)
+	{
+		if (!IsMultiplayerAuthority())
+		{
+			return;
+		}
+
+		NearbyItems.Remove(item);
+		UpdateTargetItem();
+	}
+
+	private void UpdateTargetItem()
+	{
+		_targetItem = null;
+		float closest = float.MaxValue;
+
+		foreach (Inv.WorldItem item in NearbyItems)
+		{
+			float distance = item.GlobalPosition.DistanceSquaredTo(GlobalPosition);
+			if (distance < closest)
+			{
+				closest = distance;
+				_targetItem = item;
+			}
+		}
+	}
+
+	public void RequestPickup()
+	{
+		if (_targetItem == null || !IsMultiplayerAuthority())
+		{
+			return;
+		}
+
+		Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestPickup),
+			(long)PlayerId, _targetItem.GetPath().ToString());
+	}
+
+	public void RefreshEquippedModel()
+	{
+		Inv.InventorySlot slot = Inventory.EquippedSlot;
+		EquipItem(slot?.Item);
+	}
+
+	public void EquipItem(Inv.InventoryItem item)
+	{
+		foreach (Node child in _hand.GetChildren())
+		{
+			child.QueueFree();
+		}
+
+		if (item?.WorldModel == null)
+		{
+			return;
+		}
+
+		Node3D model = item.WorldModel.Instantiate<Node3D>();
+		NormalizeModel(model);
+		_hand.AddChild(model);
+	}
+
+	private static void NormalizeModel(Node3D model)
+	{
+		Aabb bounds = CalculateBounds(model);
+		if (bounds.Size.LengthSquared() <= 0)
+		{
+			return;
+		}
+
+		float maxDimension = bounds.Size[(int)bounds.Size.MaxAxisIndex()];
+
+		float targetSize = 0.25f;
+		float scale = targetSize / maxDimension;
+		model.Scale = new Vector3(scale, scale, scale);
+
+		Vector3 centerOffset = -bounds.GetCenter() * scale;
+		model.Position = centerOffset;
+	}
+
+	private static Aabb CalculateBounds(Node3D model)
+	{
+		Aabb total = new(Vector3.Zero, Vector3.Zero);
+		bool first = true;
+
+		foreach (Node child in model.GetChildren())
+		{
+			if (child is VisualInstance3D visual)
+			{
+				Aabb bounds = visual.GetAabb();
+				if (first)
+				{
+					total = bounds;
+					first = false;
+				}
+				else
+				{
+					total = total.Merge(bounds);
+				}
+			}
+			else if (child is Node3D childNode)
+			{
+				Aabb childBounds = CalculateBounds(childNode);
+				if (first)
+				{
+					total = childBounds;
+					first = false;
+				}
+				else if (childBounds.Size.LengthSquared() > 0)
+				{
+					total = total.Merge(childBounds);
+				}
+			}
+		}
+
+		return total;
 	}
 
 	public override void _Input(InputEvent @event)
 	{
-		if (GameState.CurrentPhase != GamePhase.Gameplay)
+		if (
+			GameState.CurrentPhase != GamePhase.Gameplay
+			&& GameState.CurrentPhase != GamePhase.Inventory
+		)
 		{
 			return;
 		}
@@ -90,11 +310,22 @@ public partial class PlayerController : CharacterBody3D
 			);
 			_pivot.Rotation = pivotRotation;
 		}
+
+		if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+		{
+			if (keyEvent.Keycode == Key.F)
+			{
+				RequestPickup();
+			}
+		}
 	}
 
 	public override void _PhysicsProcess(double delta)
 	{
-		if (GameState.CurrentPhase != GamePhase.Gameplay)
+		if (
+			GameState.CurrentPhase != GamePhase.Gameplay
+			&& GameState.CurrentPhase != GamePhase.Inventory
+		)
 		{
 			return;
 		}

@@ -15,6 +15,7 @@ public partial class UIManager : Node
     private LobbyMenu _lobbyMenu;
     private PauseMenu _pauseMenu;
     private Scoreboard _scoreboard;
+    private InventoryUI _inventory;
     private Label _tipLabel;
 
     public event System.Action HostRequested;
@@ -22,7 +23,9 @@ public partial class UIManager : Node
     public event System.Action<bool> ReadyToggled;
     public event System.Action StartRequested;
     public event System.Action LeaveRequested;
+    public event System.Action<int> InventorySlotSelected;
 
+    public InventoryUI Inventory => _inventory;
     public string PlayerName => _mainMenu.PlayerName;
 
     public override void _Ready()
@@ -37,6 +40,9 @@ public partial class UIManager : Node
         _lobbyMenu.StartRequested += () => StartRequested?.Invoke();
 
         _pauseMenu.LeaveRequested += () => LeaveRequested?.Invoke();
+
+        _inventory = _screenManager.GetNode<InventoryUI>("Inventory");
+        _inventory.SlotSelected += index => InventorySlotSelected?.Invoke(index);
 
         _scoreboard.SetVisibilitySource(() => GameState.CurrentPhase == GamePhase.Gameplay);
     }
@@ -59,6 +65,11 @@ public partial class UIManager : Node
         if (_pauseMenu != null)
         {
             _pauseMenu.LeaveRequested -= () => LeaveRequested?.Invoke();
+        }
+
+        if (_inventory != null)
+        {
+            _inventory.SlotSelected -= index => InventorySlotSelected?.Invoke(index);
         }
     }
 

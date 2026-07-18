@@ -9,182 +9,243 @@ namespace EscapeGame;
 /// </summary>
 public partial class GameFlow : Node
 {
-    private UI.UIManager _ui;
-    private bool _initialized;
+	private UI.UIManager _ui;
+	private bool _initialized;
+	private bool _inventoryOpen;
+	private bool _inventoryBound;
 
-    // Сообщение, которое нужно показать в меню после перезагрузки сцены.
-    // Статическое, т.к. переживает пересоздание узла GameFlow.
-    private static string _pendingStatus = string.Empty;
+	// Сообщение, которое нужно показать в меню после перезагрузки сцены.
+	// Статическое, т.к. переживает пересоздание узла GameFlow.
+	private static string _pendingStatus = string.Empty;
 
-    public void Initialize(UI.UIManager ui)
-    {
-        _ui = ui;
+	public void Initialize(UI.UIManager ui)
+	{
+		_ui = ui;
+		Inventory.ItemDatabase.RegisterDefaults();
 
-        _ui.HostRequested += StartHost;
-        _ui.JoinRequested += JoinServer;
-        _ui.LeaveRequested += () => ReturnToMenu();
-        _ui.ReadyToggled += OnReadyToggled;
-        _ui.StartRequested += OnStartRequested;
+		_ui.HostRequested += StartHost;
+		_ui.JoinRequested += JoinServer;
+		_ui.LeaveRequested += () => ReturnToMenu();
+		_ui.ReadyToggled += OnReadyToggled;
+		_ui.StartRequested += OnStartRequested;
+		_ui.InventorySlotSelected += OnInventorySlotSelected;
 
-        NetworkManager.Instance.Connected += OnNetworkConnected;
-        NetworkManager.Instance.ConnectionError += OnNetworkError;
+		NetworkManager.Instance.Connected += OnNetworkConnected;
+		NetworkManager.Instance.ConnectionError += OnNetworkError;
 
-        LobbyManager.Instance.GameStarted += OnGameStarted;
-        LobbyManager.Instance.JoinRejectedGameInProgress += OnJoinRejected;
+		LobbyManager.Instance.GameStarted += OnGameStarted;
+		LobbyManager.Instance.JoinRejectedGameInProgress += OnJoinRejected;
 
-        Input.MouseMode = Input.MouseModeEnum.Visible;
-        GameState.SetPhase(GamePhase.MainMenu);
+		Input.MouseMode = Input.MouseModeEnum.Visible;
+		GameState.SetPhase(GamePhase.MainMenu);
 
-        if (!string.IsNullOrEmpty(_pendingStatus))
-        {
-            _ui.SetStatus(_pendingStatus);
-            _pendingStatus = string.Empty;
-        }
+		if (!string.IsNullOrEmpty(_pendingStatus))
+		{
+			_ui.SetStatus(_pendingStatus);
+			_pendingStatus = string.Empty;
+		}
 
-        _initialized = true;
-    }
+		_initialized = true;
+	}
 
-    public override void _Ready()
-    {
-        if (!_initialized)
-        {
-            GD.PushError("GameFlow must be initialized by Main before _Ready.");
-        }
-    }
+	public override void _Ready()
+	{
+		if (!_initialized)
+		{
+			GD.PushError("GameFlow must be initialized by Main before _Ready.");
+		}
+	}
 
-    public override void _ExitTree()
-    {
-        if (_ui != null)
-        {
-            _ui.HostRequested -= StartHost;
-            _ui.JoinRequested -= JoinServer;
-            _ui.LeaveRequested -= () => ReturnToMenu();
-            _ui.ReadyToggled -= OnReadyToggled;
-            _ui.StartRequested -= OnStartRequested;
-        }
+	public override void _Process(double delta)
+	{
+		if (_inventoryBound || PlayerController.LocalPlayer == null)
+		{
+			return;
+		}
 
-        if (NetworkManager.Instance != null)
-        {
-            NetworkManager.Instance.Connected -= OnNetworkConnected;
-            NetworkManager.Instance.ConnectionError -= OnNetworkError;
-        }
+		Inventory.PlayerInventory inventory = PlayerController.LocalPlayer.Inventory;
+		_ui.Inventory.Bind(inventory);
+		PlayerController.LocalPlayer.InventoryChanged += () => _ui.Inventory.Refresh();
+		_inventoryBound = true;
+	}
 
-        if (LobbyManager.Instance != null)
-        {
-            LobbyManager.Instance.GameStarted -= OnGameStarted;
-            LobbyManager.Instance.JoinRejectedGameInProgress -= OnJoinRejected;
-        }
-    }
+	public override void _ExitTree()
+	{
+		if (_ui != null)
+		{
+			_ui.HostRequested -= StartHost;
+			_ui.JoinRequested -= JoinServer;
+			_ui.LeaveRequested -= () => ReturnToMenu();
+			_ui.ReadyToggled -= OnReadyToggled;
+			_ui.StartRequested -= OnStartRequested;
+			_ui.InventorySlotSelected -= OnInventorySlotSelected;
+		}
 
-    private void StartHost()
-    {
-        Error err = NetworkManager.Instance.CreateHost();
-        if (err != Error.Ok)
-        {
-            _ui.SetStatus($"{G.Messages.ServerStartError}: {err}");
-            return;
-        }
+		if (NetworkManager.Instance != null)
+		{
+			NetworkManager.Instance.Connected -= OnNetworkConnected;
+			NetworkManager.Instance.ConnectionError -= OnNetworkError;
+		}
 
-        EnterLobby(_ui.PlayerName);
-    }
+		if (LobbyManager.Instance != null)
+		{
+			LobbyManager.Instance.GameStarted -= OnGameStarted;
+			LobbyManager.Instance.JoinRejectedGameInProgress -= OnJoinRejected;
+		}
+	}
 
-    private void JoinServer(string address)
-    {
-        Error err = NetworkManager.Instance.JoinServer(address);
-        _ui.SetStatus(err != Error.Ok ? $"{G.Messages.JoinError}: {err}" : G.Messages.Joining);
-    }
+	private void StartHost()
+	{
+		Error err = NetworkManager.Instance.CreateHost();
+		if (err != Error.Ok)
+		{
+			_ui.SetStatus($"{G.Messages.ServerStartError}: {err}");
+			return;
+		}
 
-    private void OnNetworkConnected()
-    {
-        EnterLobby(_ui.PlayerName);
-    }
+		EnterLobby(_ui.PlayerName);
+	}
 
-    private void EnterLobby(string playerName)
-    {
-        GameState.SetPhase(GamePhase.Lobby);
-        LobbyManager.Instance.SendPlayerName(playerName);
-        Input.MouseMode = Input.MouseModeEnum.Visible;
-    }
+	private void JoinServer(string address)
+	{
+		Error err = NetworkManager.Instance.JoinServer(address);
+		_ui.SetStatus(err != Error.Ok ? $"{G.Messages.JoinError}: {err}" : G.Messages.Joining);
+	}
 
-    private void OnReadyToggled(bool ready)
-    {
-        LobbyManager.Instance.SendReady(ready);
-    }
+	private void OnNetworkConnected()
+	{
+		EnterLobby(_ui.PlayerName);
+	}
 
-    private void OnStartRequested()
-    {
-        if (!LobbyManager.Instance.IsHost)
-        {
-            return;
-        }
+	private void EnterLobby(string playerName)
+	{
+		GameState.SetPhase(GamePhase.Lobby);
+		LobbyManager.Instance.SendPlayerName(playerName);
+		Input.MouseMode = Input.MouseModeEnum.Visible;
+	}
 
-        LobbyManager.Instance.StartGame();
-    }
+	private void OnReadyToggled(bool ready)
+	{
+		LobbyManager.Instance.SendReady(ready);
+	}
 
-    private void OnGameStarted()
-    {
-        GameState.SetPhase(GamePhase.Gameplay);
-        _ui.ShowTip(true);
-        Input.MouseMode = Input.MouseModeEnum.Captured;
-    }
+	private void OnStartRequested()
+	{
+		if (!LobbyManager.Instance.IsHost)
+		{
+			return;
+		}
 
-    private void OnNetworkError(string reason)
-    {
-        ReturnToMenu(reason);
-    }
+		LobbyManager.Instance.StartGame();
+	}
 
-    private void OnJoinRejected()
-    {
-        ReturnToMenu(G.Messages.GameInProgress);
-    }
+	private void OnGameStarted()
+	{
+		GameState.SetPhase(GamePhase.Gameplay);
+		_ui.ShowTip(true);
+		Input.MouseMode = Input.MouseModeEnum.Captured;
+	}
 
-    public void ReturnToMenu(string status = "")
-    {
-        NetworkManager.Instance.Disconnect();
-        LobbyManager.Instance.Reset();
+	private void OnNetworkError(string reason)
+	{
+		ReturnToMenu(reason);
+	}
 
-        _pendingStatus = status;
-        GameState.SetPhase(GamePhase.MainMenu);
-        Input.MouseMode = Input.MouseModeEnum.Visible;
-        _ui.ShowTip(false);
+	private void OnJoinRejected()
+	{
+		ReturnToMenu(G.Messages.GameInProgress);
+	}
 
-        GetTree().CallDeferred(SceneTree.MethodName.ReloadCurrentScene);
-    }
+	public void ReturnToMenu(string status = "")
+	{
+		NetworkManager.Instance.Disconnect();
+		LobbyManager.Instance.Reset();
 
-    public override void _Input(InputEvent @event)
-    {
-        if (
-            GameState.CurrentPhase != GamePhase.Gameplay
-            && GameState.CurrentPhase != GamePhase.Paused
-        )
-        {
-            return;
-        }
+		_pendingStatus = status;
+		_inventoryBound = false;
+		GameState.SetPhase(GamePhase.MainMenu);
+		Input.MouseMode = Input.MouseModeEnum.Visible;
+		_ui.ShowTip(false);
 
-        if (
-            @event is InputEventKey keyEvent
-            && keyEvent.Pressed
-            && !keyEvent.Echo
-            && keyEvent.Keycode == G.PauseKey
-        )
-        {
-            TogglePause();
-        }
-    }
+		GetTree().CallDeferred(SceneTree.MethodName.ReloadCurrentScene);
+	}
 
-    private void TogglePause()
-    {
-        if (GameState.CurrentPhase == GamePhase.Paused)
-        {
-            GameState.SetPhase(GamePhase.Gameplay);
-            _ui.ShowTip(true);
-            Input.MouseMode = Input.MouseModeEnum.Captured;
-        }
-        else
-        {
-            GameState.SetPhase(GamePhase.Paused);
-            _ui.ShowTip(false);
-            Input.MouseMode = Input.MouseModeEnum.Visible;
-        }
-    }
+	public override void _Input(InputEvent @event)
+	{
+		if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo)
+		{
+			return;
+		}
+
+		if (keyEvent.Keycode == G.PauseKey)
+		{
+			if (
+				GameState.CurrentPhase == GamePhase.Gameplay
+				|| GameState.CurrentPhase == GamePhase.Paused
+			)
+			{
+				TogglePause();
+			}
+			return;
+		}
+
+		if (keyEvent.Keycode == Key.E)
+		{
+			if (
+				GameState.CurrentPhase == GamePhase.Gameplay
+				|| GameState.CurrentPhase == GamePhase.Inventory
+			)
+			{
+				ToggleInventory();
+			}
+			return;
+		}
+	}
+
+	private void ToggleInventory()
+	{
+		if (_inventoryOpen)
+		{
+			_ui.Inventory.Close();
+			_inventoryOpen = false;
+			GameState.SetPhase(GamePhase.Gameplay);
+			Input.MouseMode = Input.MouseModeEnum.Captured;
+			_ui.ShowTip(true);
+		}
+		else
+		{
+			_ui.Inventory.Open();
+			_inventoryOpen = true;
+			GameState.SetPhase(GamePhase.Inventory);
+			Input.MouseMode = Input.MouseModeEnum.Visible;
+			_ui.ShowTip(false);
+		}
+	}
+
+	private void OnInventorySlotSelected(int slotIndex)
+	{
+		if (PlayerController.LocalPlayer == null)
+		{
+			return;
+		}
+
+		Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestEquip),
+			(long)PlayerController.LocalPlayer.PlayerId, slotIndex);
+	}
+
+	private void TogglePause()
+	{
+		if (GameState.CurrentPhase == GamePhase.Paused)
+		{
+			GameState.SetPhase(GamePhase.Gameplay);
+			_ui.ShowTip(true);
+			Input.MouseMode = Input.MouseModeEnum.Captured;
+		}
+		else
+		{
+			GameState.SetPhase(GamePhase.Paused);
+			_ui.ShowTip(false);
+			Input.MouseMode = Input.MouseModeEnum.Visible;
+		}
+	}
 }
