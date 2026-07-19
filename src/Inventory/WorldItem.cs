@@ -17,6 +17,13 @@ public partial class WorldItem : Area3D, IInteractable
 
     public override void _Ready()
     {
+        // В сценах предметов Count иногда сериализован как null → грузится нулём,
+        // из-за чего подбор клал 0 штук и «ничего не помещалось». Нормализуем.
+        if (Count <= 0)
+        {
+            Count = 1;
+        }
+
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
     }

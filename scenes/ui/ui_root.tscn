@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/inventory.tscn" id="6_inv"]
 [ext_resource type="PackedScene" path="res://scenes/ui/round_over.tscn" id="7_roundover"]
 [ext_resource type="Script" path="res://src/UI/HudEffects.cs" id="8_fx"]
+[ext_resource type="PackedScene" path="res://scenes/ui/hotbar.tscn" id="9_hotbar"]
 
 [node name="UIRoot" type="CanvasLayer"]
 script = ExtResource("1_sm")
@@ -23,6 +24,8 @@ script = ExtResource("1_sm")
 [node name="Inventory" parent="." instance=ExtResource("6_inv")]
 
 [node name="RoundOverMenu" parent="." instance=ExtResource("7_roundover")]
+
+[node name="Hotbar" parent="." instance=ExtResource("9_hotbar")]
 
 [node name="HudEffects" type="Control" parent="."]
 script = ExtResource("8_fx")
@@ -78,9 +81,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -160.0
-offset_top = -80.0
+offset_top = -122.0
 offset_right = 160.0
-offset_bottom = -52.0
+offset_bottom = -94.0
 grow_horizontal = 2
 grow_vertical = 0
 horizontal_alignment = 1

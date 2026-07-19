@@ -75,6 +75,13 @@ public partial class PlayerController : CharacterBody3D
 		_reviveTarget != null && GodotObject.IsInstanceValid(_reviveTarget);
 	public float ReviveProgress => _reviveProgress;
 
+	// Самолечение расходником удержанием ЛКМ: прогресс канала и защёлка «уже
+	// отправлено», чтобы за одно удержание применить ровно один предмет.
+	private float _healProgress;
+	private bool _healSent;
+	public bool IsSelfHealing => _healProgress > 0f;
+	public float SelfHealProgress => _healProgress;
+
 	public List<Interaction.IInteractable> NearbyInteractables { get; } = new();
 
 	private Interaction.IInteractable _targetInteractable;
@@ -142,6 +149,13 @@ public partial class PlayerController : CharacterBody3D
 			Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 2);
 
 			Inv.InventoryRelay.Instance?.BroadcastInventory(this);
+		}
+		else if (IsMultiplayerAuthority())
+		{
+			// Клиент: реплика игрока появляется позже серверной рассылки инвентаря,
+			// поэтому первая SyncInventory теряется — дозапрашиваем актуальное
+			// состояние у сервера, иначе инвентарь при первом открытии пуст.
+			Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestInventorySync), (long)PlayerId);
 		}
 	}
 
@@ -495,8 +509,47 @@ public partial class PlayerController : CharacterBody3D
 			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
 	}
 
-	// Использовать экипированный расходник (аптечку/шприц) на себе.
-	private void TryUseEquipped()
+	// Лечение расходником в руке удержанием ЛКМ (~2 c). За удержание — одно
+	// применение; чтобы вылечиться ещё раз, ЛКМ нужно отпустить и зажать снова.
+	private void UpdateSelfHeal(float delta)
+	{
+		Inv.InventorySlot slot = Inventory.EquippedSlot;
+		bool canHeal = VitalState == PlayerVitalState.Alive
+			&& slot != null && !slot.IsEmpty && IsConsumable(slot.Item.Id)
+			&& Health < G.Combat.MaxHealth
+			&& Input.IsActionPressed("attack");
+
+		if (!canHeal)
+		{
+			_healProgress = 0f;
+			_healSent = false;
+			return;
+		}
+
+		// Запрос уже отправлен — держим бар полным, пока по сети не придёт здоровье.
+		if (_healSent)
+		{
+			_healProgress = 1f;
+			return;
+		}
+
+		_healProgress += delta / G.Combat.HealChannelTime;
+		if (_healProgress >= 1f)
+		{
+			_healProgress = 1f;
+			_healSent = true;
+			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestUseItem),
+				(long)PlayerId, Inventory.EquippedSlotIndex);
+		}
+	}
+
+	private static bool IsConsumable(string itemId)
+	{
+		return itemId == "health" || itemId == "pill" || itemId == "syringe";
+	}
+
+	// Выбрасывает экипированный предмет (клавиша drop / колесо не задействует).
+	private void RequestDropEquipped()
 	{
 		if (!IsMultiplayerAuthority() || VitalState != PlayerVitalState.Alive)
 		{
@@ -509,8 +562,54 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestUseItem),
-			(long)PlayerId, Inventory.EquippedSlotIndex);
+		RequestDropSlot(Inventory.EquippedSlotIndex);
+	}
+
+	// Общий путь выброса: клиент просит сервер выбросить содержимое слота.
+	// Позицию (перед игроком, чуть над полом) считаем здесь — только клиент знает,
+	// куда смотрит игрок; сервер её валидирует.
+	public void RequestDropSlot(int slotIndex)
+	{
+		if (!IsMultiplayerAuthority())
+		{
+			return;
+		}
+
+		Vector3 forward = -GlobalTransform.Basis.Z;
+		Vector3 position = GlobalPosition + forward * G.DropDistance + Vector3.Up * 0.3f;
+
+		Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestDrop),
+			(long)PlayerId, slotIndex, position);
+	}
+
+	// Колесо мыши: переключить экипировку на следующий/предыдущий занятый слот
+	// хотбара (первые G.Hotbar.SlotCount ячеек).
+	public void CycleHotbar(int direction)
+	{
+		if (!IsMultiplayerAuthority())
+		{
+			return;
+		}
+
+		int count = Mathf.Min(G.Hotbar.SlotCount, Inventory.Slots.Count);
+		if (count <= 0)
+		{
+			return;
+		}
+
+		int current = Inventory.EquippedSlotIndex;
+		int start = current >= 0 && current < count ? current : (direction > 0 ? -1 : 0);
+
+		for (int step = 1; step <= count; step++)
+		{
+			int index = ((start + direction * step) % count + count) % count;
+			if (!Inventory.Slots[index].IsEmpty)
+			{
+				Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestEquip),
+					(long)PlayerId, index);
+				return;
+			}
+		}
 	}
 
 	public void RefreshEquippedModel()
@@ -648,15 +747,31 @@ public partial class PlayerController : CharacterBody3D
 
 		// Удар — только при захваченной мыши, чтобы клик по инвентарю не бил.
 		// Сам луч выполняется в _PhysicsProcess (безопасно для physics space).
+		// С расходником в руке ЛКМ не бьёт, а лечит удержанием (см. UpdateSelfHeal).
 		if (@event.IsActionPressed("attack")
 			&& Input.GetMouseMode() == Input.MouseModeEnum.Captured)
 		{
 			_attackQueued = true;
 		}
 
-		if (@event.IsActionPressed("use"))
+		// Выбросить экипированный предмет.
+		if (@event.IsActionPressed("drop"))
 		{
-			TryUseEquipped();
+			RequestDropEquipped();
+		}
+
+		// Колесо мыши переключает экипировку по хотбару.
+		if (@event is InputEventMouseButton { Pressed: true } wheel
+			&& Input.GetMouseMode() == Input.MouseModeEnum.Captured)
+		{
+			if (wheel.ButtonIndex == MouseButton.WheelUp)
+			{
+				CycleHotbar(-1);
+			}
+			else if (wheel.ButtonIndex == MouseButton.WheelDown)
+			{
+				CycleHotbar(1);
+			}
 		}
 	}
 
@@ -707,6 +822,7 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		UpdateRevive((float)delta);
+		UpdateSelfHeal((float)delta);
 	}
 
 	// Подъём поверженного союзника удержанием F. Прогресс копится, пока рядом
@@ -748,16 +864,10 @@ public partial class PlayerController : CharacterBody3D
 		}
 	}
 
-	// Ближайший поверженный союзник в радиусе подъёма. Требует медикамент в
-	// инвентаре — как и серверная проверка в CombatRelay.RequestRevive, чтобы не
-	// показывать подсказку/прогресс, когда поднять всё равно нечем.
+	// Ближайший поверженный союзник в радиусе подъёма. Предметов не требует —
+	// поднять можно удержанием F рядом (см. CombatRelay.RequestRevive).
 	private PlayerController FindReviveTarget()
 	{
-		if (!HasMedical())
-		{
-			return null;
-		}
-
 		PlayerController best = null;
 		float bestDistance = G.Combat.ReviveRange * G.Combat.ReviveRange;
 
@@ -779,11 +889,6 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		return best;
-	}
-
-	private bool HasMedical()
-	{
-		return Inventory.Has("syringe") || Inventory.Has("health");
 	}
 
 	private Vector3 ReadMovementInput()

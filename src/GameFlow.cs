@@ -30,6 +30,7 @@ public partial class GameFlow : Node
 		_ui.ReadyToggled += OnReadyToggled;
 		_ui.StartRequested += OnStartRequested;
 		_ui.InventorySlotSelected += OnInventorySlotSelected;
+		_ui.InventorySlotDropRequested += OnInventorySlotDropRequested;
 
 		NetworkManager.Instance.Connected += OnNetworkConnected;
 		NetworkManager.Instance.ConnectionError += OnNetworkError;
@@ -70,7 +71,12 @@ public partial class GameFlow : Node
 		if (!_inventoryBound)
 		{
 			_ui.Inventory.Bind(local.Inventory);
-			local.InventoryChanged += () => _ui.Inventory.Refresh();
+			_ui.Hotbar.Bind(local.Inventory);
+			local.InventoryChanged += () =>
+			{
+				_ui.Inventory.Refresh();
+				_ui.Hotbar.Refresh();
+			};
 
 			// Визуальный фидбек боя: вспышки урона/лечения и хитмаркер.
 			local.LocalDamaged += _ui.FlashDamage;
@@ -80,8 +86,9 @@ public partial class GameFlow : Node
 			_inventoryBound = true;
 		}
 
-		// Подсказка, таймер и здоровье показываются только в самой игре.
+		// Подсказка, таймер, здоровье и хотбар показываются только в самой игре.
 		bool inGameplay = GameState.CurrentPhase == GamePhase.Gameplay;
+		_ui.ShowHotbar(inGameplay);
 
 		// Рядом поверженный союзник — подсказка «удерживайте F» и прогресс-бар
 		// подъёма; иначе — обычная подсказка взаимодействия.
@@ -89,6 +96,11 @@ public partial class GameFlow : Node
 		{
 			_ui.SetInteractPrompt("Удерживайте [F], чтобы поднять");
 			_ui.SetReviveProgress(local.ReviveProgress);
+		}
+		else if (inGameplay && local.IsSelfHealing)
+		{
+			_ui.SetInteractPrompt("Лечение…");
+			_ui.SetReviveProgress(local.SelfHealProgress);
 		}
 		else
 		{
@@ -132,6 +144,7 @@ public partial class GameFlow : Node
 			_ui.ReadyToggled -= OnReadyToggled;
 			_ui.StartRequested -= OnStartRequested;
 			_ui.InventorySlotSelected -= OnInventorySlotSelected;
+			_ui.InventorySlotDropRequested -= OnInventorySlotDropRequested;
 		}
 
 		if (NetworkManager.Instance != null)
@@ -358,6 +371,11 @@ public partial class GameFlow : Node
 
 		Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestEquip),
 			(long)PlayerController.LocalPlayer.PlayerId, slotIndex);
+	}
+
+	private void OnInventorySlotDropRequested(int slotIndex)
+	{
+		PlayerController.LocalPlayer?.RequestDropSlot(slotIndex);
 	}
 
 	private void TogglePause()

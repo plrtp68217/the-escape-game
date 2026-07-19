@@ -124,9 +124,14 @@ public static class G
         public const int AxeDamage = 34;
         public const float AttackRange = 3f;
 
-        // Лечение расходником (аптечка/шприц) и здоровье после подъёма.
-        public const int HealAmount = 40;
+        // Лечение расходниками (по типу) и здоровье после подъёма.
+        public const int HealAmount = 40;     // аптечка (health)
+        public const int PillHealAmount = 25; // таблетка (pill)
+        public const int SyringeHealAmount = 60; // шприц (syringe)
         public const int ReviveHealth = 50;
+
+        // Сколько секунд удерживать ЛКМ с расходником в руке, чтобы вылечиться.
+        public const float HealChannelTime = 2f;
 
         // Дистанция, с которой можно поднять поверженного союзника.
         public const float ReviveRange = 2.5f;
@@ -134,6 +139,16 @@ public static class G
         // Сколько секунд нужно удерживать F, чтобы поднять поверженного союзника.
         public const float ReviveHoldTime = 1.5f;
     }
+
+    // Хотбар (быстрый доступ внизу экрана)
+    public static class Hotbar
+    {
+        // Сколько первых слотов инвентаря показывать в хотбаре и перебирать колесом.
+        public const int SlotCount = 4;
+    }
+
+    // Как далеко перед игроком спавнится выброшенный предмет.
+    public const float DropDistance = 1.1f;
 
     // Двери камер
     public static class Door

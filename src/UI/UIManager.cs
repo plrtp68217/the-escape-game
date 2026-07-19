@@ -16,6 +16,7 @@ public partial class UIManager : Node
     private PauseMenu _pauseMenu;
     private Scoreboard _scoreboard;
     private InventoryUI _inventory;
+    private HotbarUI _hotbar;
     private RoundOverMenu _roundOverMenu;
     private HudEffects _hudEffects;
     private Label _tipLabel;
@@ -29,8 +30,10 @@ public partial class UIManager : Node
     public event System.Action StartRequested;
     public event System.Action LeaveRequested;
     public event System.Action<int> InventorySlotSelected;
+    public event System.Action<int> InventorySlotDropRequested;
 
     public InventoryUI Inventory => _inventory;
+    public HotbarUI Hotbar => _hotbar;
     public string PlayerName => _mainMenu.PlayerName;
 
     public override void _Ready()
@@ -50,6 +53,10 @@ public partial class UIManager : Node
 
         _inventory = _screenManager.GetNode<InventoryUI>("Inventory");
         _inventory.SlotSelected += index => InventorySlotSelected?.Invoke(index);
+        _inventory.SlotDropRequested += index => InventorySlotDropRequested?.Invoke(index);
+
+        _hotbar = _screenManager.GetNode<HotbarUI>("Hotbar");
+        _hotbar.Visible = false;
 
         _scoreboard.SetVisibilitySource(() => GameState.CurrentPhase == GamePhase.Gameplay);
     }
@@ -93,6 +100,11 @@ public partial class UIManager : Node
     public void ShowTip(bool visible)
     {
         _tipLabel.Visible = visible;
+    }
+
+    public void ShowHotbar(bool visible)
+    {
+        _hotbar.Visible = visible;
     }
 
     public void SetTip(string text)

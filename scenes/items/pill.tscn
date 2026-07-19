@@ -9,7 +9,7 @@ size = Vector3(0.15, 0.254541, 0.15)
 [node name="Pill" type="Area3D" unique_id=317984473]
 script = ExtResource("1_wi")
 ItemId = "pill"
-Count = null
+Count = 1
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2108546939]
 transform = Transform3D(0.125, 0, 0, 0, 0.125, 0, 0, 0, 0.125, 0, 0.0031005852, 0)

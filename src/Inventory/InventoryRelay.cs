@@ -17,6 +17,24 @@ public partial class InventoryRelay : Node
         Instance = this;
     }
 
+    // Клиент просит сервер прислать актуальный инвентарь. Нужно на старте: сервер
+    // наполняет инвентарь в _Ready и рассылает его раньше, чем у клиента появляется
+    // реплика игрока, поэтому первая рассылка теряется. Клиент дозапрашивает её сам.
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void RequestInventorySync(long playerId)
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        PlayerController player = FindPlayerController(playerId);
+        if (player != null)
+        {
+            BroadcastInventory(player);
+        }
+    }
+
     // Клиент просит сервер экипировать слот.
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestEquip(long playerId, int slotIndex)
@@ -60,6 +78,75 @@ public partial class InventoryRelay : Node
         }
 
         player.UpdateInventory(itemIds, counts, equippedIndex);
+    }
+
+    // Путь к контейнеру выброшенных предметов в сцене (одинаков на всех пирах).
+    private const string DroppedItemsPath = "/root/Main/DroppedItems";
+
+    // Монотонный счётчик имён выброшенных предметов (только на сервере) — чтобы
+    // имена узлов совпадали на всех пирах и работал путь для RemoveWorldItem.
+    private int _dropCounter;
+
+    // Клиент просит сервер выбросить содержимое слота. Позицию считает клиент
+    // (он знает, куда смотрит игрок), сервер её валидирует по своей позиции.
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void RequestDrop(long playerId, int slotIndex, Vector3 position)
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        PlayerController player = FindPlayerController(playerId);
+        if (player == null || slotIndex < 0 || slotIndex >= player.Inventory.Slots.Count)
+        {
+            return;
+        }
+
+        InventorySlot slot = player.Inventory.Slots[slotIndex];
+        if (slot.IsEmpty)
+        {
+            return;
+        }
+
+        // Анти-чит: не даём бросать слишком далеко от игрока.
+        if (player.GlobalPosition.DistanceTo(position) > 3f)
+        {
+            position = player.GlobalPosition + Vector3.Up * 0.3f;
+        }
+
+        string itemId = slot.Item.Id;
+        int count = slot.Count;
+        slot.Clear();
+        BroadcastInventory(player);
+
+        string nodeName = $"Drop_{_dropCounter++}";
+        Rpc(nameof(SpawnWorldItem), itemId, count, position, nodeName);
+    }
+
+    // Сервер: создать выброшенный предмет в мире у всех пиров (ручная репликация,
+    // как и удаление через RemoveWorldItem — так пути узлов совпадают везде).
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void SpawnWorldItem(string itemId, int count, Vector3 position, string nodeName)
+    {
+        var container = GetNodeOrNull<Node3D>(DroppedItemsPath);
+        if (container == null)
+        {
+            return;
+        }
+
+        InventoryItem data = ItemDatabase.Get(itemId);
+        if (data?.WorldModel == null)
+        {
+            return;
+        }
+
+        var item = data.WorldModel.Instantiate<WorldItem>();
+        item.Name = nodeName;
+        item.ItemId = itemId;
+        item.Count = count;
+        container.AddChild(item);
+        item.GlobalPosition = position;
     }
 
     // Сервер сообщает всем, что предмет в мире нужно удалить.

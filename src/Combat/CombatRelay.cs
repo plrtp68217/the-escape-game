@@ -95,7 +95,7 @@ public partial class CombatRelay : Node
         slot.Remove(1);
         Inventory.InventoryRelay.Instance?.BroadcastInventory(player);
 
-        int health = Mathf.Min(G.Combat.MaxHealth, player.Health + G.Combat.HealAmount);
+        int health = Mathf.Min(G.Combat.MaxHealth, player.Health + HealAmountFor(slot.Item.Id));
         SyncVitalsTo(player, health, PlayerVitalState.Alive);
     }
 
@@ -138,15 +138,7 @@ public partial class CombatRelay : Node
             return;
         }
 
-        string medical = FindMedical(reviver.Inventory);
-        if (medical == null)
-        {
-            return;
-        }
-
-        reviver.Inventory.RemoveOne(medical);
-        Inventory.InventoryRelay.Instance?.BroadcastInventory(reviver);
-
+        // Подъём союзника предметов не требует — достаточно удержать F рядом.
         SyncVitalsTo(target, G.Combat.ReviveHealth, PlayerVitalState.Alive);
     }
 
@@ -183,19 +175,14 @@ public partial class CombatRelay : Node
 
     private static bool IsMedical(string itemId)
     {
-        return itemId == "health" || itemId == "syringe";
+        return itemId == "health" || itemId == "syringe" || itemId == "pill";
     }
 
-    private static string FindMedical(Inventory.PlayerInventory inventory)
+    // Сколько лечит расходник данного типа.
+    private static int HealAmountFor(string itemId) => itemId switch
     {
-        if (inventory.Has("syringe"))
-        {
-            return "syringe";
-        }
-        if (inventory.Has("health"))
-        {
-            return "health";
-        }
-        return null;
-    }
+        "syringe" => G.Combat.SyringeHealAmount,
+        "pill" => G.Combat.PillHealAmount,
+        _ => G.Combat.HealAmount,
+    };
 }
