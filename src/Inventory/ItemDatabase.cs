@@ -31,6 +31,7 @@ public static class ItemDatabase
         RegisterItem("health", "Аптечка", "res://scenes/items/health.tscn", 5);
         RegisterItem("pill", "Таблетка", "res://scenes/items/pill.tscn", 10);
         RegisterItem("syringe", "Шприц", "res://scenes/items/syringe.tscn", 5);
+        RegisterItem("key", "Ключ", "res://scenes/items/key.tscn", 5);
     }
 
     private static void RegisterItem(string id, string name, string scenePath, int maxStack)

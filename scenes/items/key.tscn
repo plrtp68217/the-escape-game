@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxMesh" id="BoxMesh_key"]
+size = Vector3(0.1, 0.1, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="mat_key"]
+albedo_color = Color(0.9, 0.78, 0.2, 1)
+metallic = 0.6
+roughness = 0.4
+
+[node name="Key" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_key")
+material_override = SubResource("mat_key")

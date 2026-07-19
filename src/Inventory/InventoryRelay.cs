@@ -17,49 +17,6 @@ public partial class InventoryRelay : Node
         Instance = this;
     }
 
-    // Клиент просит сервер подобрать предмет. CallLocal = true, чтобы хост
-    // тоже мог вызывать метод локально при самоотправке.
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void RequestPickup(long playerId, string itemPath)
-    {
-        if (!Multiplayer.IsServer())
-        {
-            return;
-        }
-
-        PlayerController player = FindPlayerController(playerId);
-        if (player == null)
-        {
-            return;
-        }
-
-        WorldItem item = GetNodeOrNull<WorldItem>(itemPath);
-        if (item == null || !item.IsInsideTree())
-        {
-            return;
-        }
-
-        InventoryItem data = ItemDatabase.Get(item.ItemId);
-        if (data == null)
-        {
-            return;
-        }
-
-        int remaining = player.Inventory.AddItem(data, item.Count);
-        if (remaining == item.Count)
-        {
-            return;
-        }
-
-        item.Count = remaining;
-        if (item.Count <= 0)
-        {
-            Rpc(nameof(RemoveWorldItem), itemPath);
-        }
-
-        Rpc(nameof(SyncInventory), playerId, PackIds(player.Inventory), PackCounts(player.Inventory), player.Inventory.EquippedSlotIndex);
-    }
-
     // Клиент просит сервер экипировать слот.
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestEquip(long playerId, int slotIndex)
@@ -76,7 +33,20 @@ public partial class InventoryRelay : Node
         }
 
         player.Inventory.TryEquip(slotIndex);
-        Rpc(nameof(SyncInventory), playerId, PackIds(player.Inventory), PackCounts(player.Inventory), player.Inventory.EquippedSlotIndex);
+        BroadcastInventory(player);
+    }
+
+    // Сервер рассылает всем актуальное состояние инвентаря игрока. Общий путь
+    // для подбора, экипировки и любых других серверных изменений инвентаря.
+    public void BroadcastInventory(PlayerController player)
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        Rpc(nameof(SyncInventory), (long)player.PlayerId,
+            PackIds(player.Inventory), PackCounts(player.Inventory), player.Inventory.EquippedSlotIndex);
     }
 
     // Сервер рассылает актуальное состояние инвентаря игрока.

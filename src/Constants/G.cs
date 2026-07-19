@@ -80,4 +80,14 @@ public static class G
     {
         public const int MinPlayersToStart = 1;
     }
+
+    // Двери камер
+    public static class Door
+    {
+        // Сколько ударов топором нужно, чтобы выбить запертую дверь.
+        public const int Health = 3;
+
+        public const string KeyItemId = "key";
+        public const string AxeItemId = "axe";
+    }
 }

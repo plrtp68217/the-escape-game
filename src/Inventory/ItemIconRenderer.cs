@@ -12,6 +12,7 @@ public static class ItemIconRenderer
     private static readonly Color PillColor = new(0.2f, 0.7f, 0.3f);
     private static readonly Color PillsColor = new(0.3f, 0.5f, 0.9f);
     private static readonly Color SyringeColor = new(0.8f, 0.7f, 0.2f);
+    private static readonly Color KeyColor = new(0.9f, 0.78f, 0.2f);
 
     public static Texture2D CreatePlaceholder(string id)
     {
@@ -24,6 +25,7 @@ public static class ItemIconRenderer
             "pill" => PillColor,
             "pills" => PillsColor,
             "syringe" => SyringeColor,
+            "key" => KeyColor,
             _ => Colors.Gray
         };
 

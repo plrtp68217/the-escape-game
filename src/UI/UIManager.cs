@@ -17,6 +17,7 @@ public partial class UIManager : Node
     private Scoreboard _scoreboard;
     private InventoryUI _inventory;
     private Label _tipLabel;
+    private Label _promptLabel;
 
     public event System.Action HostRequested;
     public event System.Action<string> JoinRequested;
@@ -88,6 +89,11 @@ public partial class UIManager : Node
         _tipLabel.Text = text;
     }
 
+    public void SetInteractPrompt(string text)
+    {
+        _promptLabel.Text = text;
+    }
+
     private void InstantiateUI()
     {
         var scene = GD.Load<PackedScene>(UIRootScenePath);
@@ -100,5 +106,6 @@ public partial class UIManager : Node
         _pauseMenu = _screenManager.GetNode<PauseMenu>("PauseMenu");
         _scoreboard = _screenManager.GetNode<Scoreboard>("Scoreboard");
         _tipLabel = _screenManager.GetNode<Label>("TipLabel");
+        _promptLabel = _screenManager.GetNode<Label>("InteractPrompt");
     }
 }

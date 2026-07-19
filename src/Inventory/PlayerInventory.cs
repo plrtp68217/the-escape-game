@@ -64,6 +64,33 @@ public class PlayerInventory
         return remaining;
     }
 
+    // Есть ли в инвентаре хотя бы один предмет с таким id.
+    public bool Has(string itemId)
+    {
+        foreach (InventorySlot slot in _slots)
+        {
+            if (slot.Item?.Id == itemId && slot.Count > 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Убирает одну единицу предмета. Возвращает true, если предмет нашёлся.
+    public bool RemoveOne(string itemId)
+    {
+        foreach (InventorySlot slot in _slots)
+        {
+            if (slot.Item?.Id == itemId && slot.Count > 0)
+            {
+                slot.Remove(1);
+                return true;
+            }
+        }
+        return false;
+    }
+
     public bool TryEquip(int slotIndex)
     {
         if (slotIndex < 0 || slotIndex >= _slots.Count || _slots[slotIndex].IsEmpty)

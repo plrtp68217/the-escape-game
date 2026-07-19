@@ -45,9 +45,9 @@ public partial class PlayerController : CharacterBody3D
 	public Inv.PlayerInventory Inventory { get; private set; }
 	public event System.Action InventoryChanged;
 
-	public List<Inv.WorldItem> NearbyItems { get; } = new();
+	public List<Interaction.IInteractable> NearbyInteractables { get; } = new();
 
-	private Inv.WorldItem _targetItem;
+	private Interaction.IInteractable _targetInteractable;
 	private Vector3 _targetVelocity = Vector3.Zero;
 	private Node3D _pivot;
 	private Camera3D _camera;
@@ -101,8 +101,7 @@ public partial class PlayerController : CharacterBody3D
 			Inventory.AddItem(Inv.ItemDatabase.Get("health"), 3);
 			Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 2);
 
-			Inv.InventoryRelay.Instance?.Rpc(nameof(Inv.InventoryRelay.SyncInventory), (long)PlayerId,
-				PackIds(), PackCounts(), Inventory.EquippedSlotIndex);
+			Inv.InventoryRelay.Instance?.BroadcastInventory(this);
 		}
 	}
 
@@ -165,76 +164,78 @@ public partial class PlayerController : CharacterBody3D
 		InventoryChanged?.Invoke();
 	}
 
-	private string[] PackIds()
-	{
-		string[] ids = new string[Inventory.Slots.Count];
-		for (int i = 0; i < ids.Length; i++)
-		{
-			ids[i] = Inventory.Slots[i].Item?.Id ?? string.Empty;
-		}
-		return ids;
-	}
-
-	private int[] PackCounts()
-	{
-		int[] counts = new int[Inventory.Slots.Count];
-		for (int i = 0; i < counts.Length; i++)
-		{
-			counts[i] = Inventory.Slots[i].Count;
-		}
-		return counts;
-	}
-
-	public void RegisterNearbyItem(Inv.WorldItem item)
+	public void RegisterInteractable(Interaction.IInteractable interactable)
 	{
 		if (!IsMultiplayerAuthority())
 		{
 			return;
 		}
 
-		if (!NearbyItems.Contains(item))
+		if (!NearbyInteractables.Contains(interactable))
 		{
-			NearbyItems.Add(item);
-			UpdateTargetItem();
+			NearbyInteractables.Add(interactable);
+			UpdateTargetInteractable();
 		}
 	}
 
-	public void UnregisterNearbyItem(Inv.WorldItem item)
+	public void UnregisterInteractable(Interaction.IInteractable interactable)
 	{
 		if (!IsMultiplayerAuthority())
 		{
 			return;
 		}
 
-		NearbyItems.Remove(item);
-		UpdateTargetItem();
+		NearbyInteractables.Remove(interactable);
+		UpdateTargetInteractable();
 	}
 
-	private void UpdateTargetItem()
+	private void UpdateTargetInteractable()
 	{
-		_targetItem = null;
+		_targetInteractable = null;
 		float closest = float.MaxValue;
 
-		foreach (Inv.WorldItem item in NearbyItems)
+		for (int i = NearbyInteractables.Count - 1; i >= 0; i--)
 		{
-			float distance = item.GlobalPosition.DistanceSquaredTo(GlobalPosition);
+			Interaction.IInteractable interactable = NearbyInteractables[i];
+
+			// Объект мог быть удалён из мира (например, подобранный предмет).
+			if (interactable is Node node && !GodotObject.IsInstanceValid(node))
+			{
+				NearbyInteractables.RemoveAt(i);
+				continue;
+			}
+
+			float distance = interactable.GlobalPosition.DistanceSquaredTo(GlobalPosition);
 			if (distance < closest)
 			{
 				closest = distance;
-				_targetItem = item;
+				_targetInteractable = interactable;
 			}
 		}
 	}
 
-	public void RequestPickup()
+	// Текущая подсказка взаимодействия для HUD (клиент).
+	public string GetInteractPrompt()
 	{
-		if (_targetItem == null || !IsMultiplayerAuthority())
+		if (_targetInteractable is Node node && !GodotObject.IsInstanceValid(node))
+		{
+			_targetInteractable = null;
+		}
+
+		return _targetInteractable?.GetPrompt(this) ?? string.Empty;
+	}
+
+	public void RequestInteract()
+	{
+		if (_targetInteractable is not Node node
+			|| !GodotObject.IsInstanceValid(node)
+			|| !IsMultiplayerAuthority())
 		{
 			return;
 		}
 
-		Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestPickup),
-			(long)PlayerId, _targetItem.GetPath().ToString());
+		Interaction.InteractionRelay.Instance?.RpcId(1, nameof(Interaction.InteractionRelay.RequestInteract),
+			(long)PlayerId, node.GetPath().ToString());
 	}
 
 	public void RefreshEquippedModel()
@@ -256,6 +257,16 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		Node3D model = item.WorldModel.Instantiate<Node3D>();
+
+		// Модель предмета в руке часто повторяет сцену WorldItem (например,
+		// axe.tscn). Отключаем её как подбираемый объект, иначе она бы
+		// зарегистрировалась как предмет рядом с самим игроком.
+		if (model is Inv.WorldItem heldItem)
+		{
+			heldItem.Monitoring = false;
+			heldItem.Monitorable = false;
+		}
+
 		NormalizeModel(model);
 		_hand.AddChild(model);
 	}
@@ -349,12 +360,9 @@ public partial class PlayerController : CharacterBody3D
 			_pivot.Rotation = pivotRotation;
 		}
 
-		if (@event is InputEventKey keyEvent && keyEvent.Pressed && !keyEvent.Echo)
+		if (@event.IsActionPressed("interact"))
 		{
-			if (keyEvent.Keycode == Key.F)
-			{
-				RequestPickup();
-			}
+			RequestInteract();
 		}
 	}
 

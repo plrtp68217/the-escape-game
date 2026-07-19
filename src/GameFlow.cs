@@ -59,15 +59,22 @@ public partial class GameFlow : Node
 
 	public override void _Process(double delta)
 	{
-		if (_inventoryBound || PlayerController.LocalPlayer == null)
+		PlayerController local = PlayerController.LocalPlayer;
+		if (local == null)
 		{
 			return;
 		}
 
-		Inventory.PlayerInventory inventory = PlayerController.LocalPlayer.Inventory;
-		_ui.Inventory.Bind(inventory);
-		PlayerController.LocalPlayer.InventoryChanged += () => _ui.Inventory.Refresh();
-		_inventoryBound = true;
+		if (!_inventoryBound)
+		{
+			_ui.Inventory.Bind(local.Inventory);
+			local.InventoryChanged += () => _ui.Inventory.Refresh();
+			_inventoryBound = true;
+		}
+
+		// Подсказка взаимодействия показывается только в самой игре.
+		_ui.SetInteractPrompt(
+			GameState.CurrentPhase == GamePhase.Gameplay ? local.GetInteractPrompt() : string.Empty);
 	}
 
 	public override void _ExitTree()
