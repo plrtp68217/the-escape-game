@@ -2,10 +2,8 @@
 
 [ext_resource type="Script" uid="uid://bfuhnc0esrq36" path="res://src/Main.cs" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/cell.tscn" id="2_cell"]
-[ext_resource type="Script" uid="uid://br0gpbf83fwtw" path="res://src/Inventory/WorldItem.cs" id="3_wi"]
-[ext_resource type="PackedScene" path="res://scenes/items/key.tscn" id="4_key"]
-[ext_resource type="PackedScene" uid="uid://cmpx083xfrj8e" path="res://scenes/items/health.tscn" id="5_health"]
-[ext_resource type="Script" uid="uid://ji5si3bpobv" path="res://src/ExitZone.cs" id="6_exit"]
+[ext_resource type="PackedScene" uid="uid://cmpx083xfrj8e" path="res://scenes/items/health.tscn" id="3_health"]
+[ext_resource type="Script" uid="uid://ji5si3bpobv" path="res://src/ExitZone.cs" id="4_exit"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(60, 2, 60)
@@ -13,113 +11,119 @@ size = Vector3(60, 2, 60)
 [sub_resource type="BoxMesh" id="ground_mesh"]
 size = Vector3(60, 2, 60)
 
-[sub_resource type="BoxShape3D" id="corridor_shape"]
-size = Vector3(17, 4, 0.3)
-
 [sub_resource type="StandardMaterial3D" id="mat_wall"]
 albedo_color = Color(0.5, 0.5, 0.55, 1)
 
-[sub_resource type="BoxMesh" id="corridor_mesh"]
-size = Vector3(17, 4, 0.3)
+[sub_resource type="BoxShape3D" id="ns_shape"]
+size = Vector3(30.5, 4, 0.3)
 
-[sub_resource type="BoxShape3D" id="end_shape"]
-size = Vector3(0.3, 4, 6.3)
+[sub_resource type="BoxMesh" id="ns_mesh"]
+size = Vector3(30.5, 4, 0.3)
 
-[sub_resource type="BoxMesh" id="end_mesh"]
-size = Vector3(0.3, 4, 6.3)
+[sub_resource type="BoxShape3D" id="we_shape"]
+size = Vector3(0.3, 4, 28)
 
-[sub_resource type="BoxShape3D" id="keypick_shape"]
+[sub_resource type="BoxMesh" id="we_mesh"]
+size = Vector3(0.3, 4, 28)
 
 [sub_resource type="BoxShape3D" id="exit_shape"]
-size = Vector3(2.5, 3, 5)
+size = Vector3(2.5, 3, 26)
+
+[sub_resource type="BoxMesh" id="exit_mesh"]
+size = Vector3(2.5, 3, 26)
 
 [sub_resource type="StandardMaterial3D" id="mat_exit"]
 transparency = 1
 albedo_color = Color(0.2, 0.9, 0.3, 0.25)
 
-[sub_resource type="BoxMesh" id="exit_mesh"]
-size = Vector3(2.5, 3, 5)
-
-[node name="Main" type="Node3D" unique_id=1181183296]
+[node name="Main" type="Node3D"]
 script = ExtResource("1_main")
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=1833076735]
+[node name="Ground" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1635780941]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
 shape = SubResource("ground_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=30000718]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
 mesh = SubResource("ground_mesh")
 
-[node name="Players" type="Node3D" parent="." unique_id=1463727475]
+[node name="Players" type="Node3D" parent="."]
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=901243166]
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
 _spawnable_scenes = PackedStringArray("uid://cd1e025wlou5a")
 spawn_path = NodePath("../Players")
 
-[node name="DirectionalLightPivot" type="Node3D" parent="." unique_id=1059707131]
+[node name="DirectionalLightPivot" type="Node3D" parent="."]
 transform = Transform3D(0.57215637, 3.5849656e-08, -0.82014453, 0.82014453, -2.5009749e-08, 0.57215637, 0, -1, -4.371139e-08, 0, 23, 0)
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot" unique_id=458248352]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot"]
 transform = Transform3D(1, 0, 0, 0, 0.8660254, -0.5, 0, 0.5, 0.8660254, 0, 1.1368684e-13, 62)
 
-[node name="Cell" parent="." unique_id=1204712313 instance=ExtResource("2_cell")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 0)
+[node name="Cell0" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -10.5)
 
-[node name="Corridor" type="StaticBody3D" parent="." unique_id=515724774]
+[node name="Cell1" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -3.5)
 
-[node name="NorthColl" type="CollisionShape3D" parent="Corridor" unique_id=1223924612]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 2, -3)
-shape = SubResource("corridor_shape")
+[node name="Cell2" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 3.5)
 
-[node name="NorthMesh" type="MeshInstance3D" parent="Corridor" unique_id=1680385234]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 2, -3)
+[node name="Cell3" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 10.5)
+
+[node name="Hall" type="StaticBody3D" parent="."]
+
+[node name="NorthColl" type="CollisionShape3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, -14)
+shape = SubResource("ns_shape")
+
+[node name="NorthMesh" type="MeshInstance3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, -14)
+mesh = SubResource("ns_mesh")
 material_override = SubResource("mat_wall")
-mesh = SubResource("corridor_mesh")
 
-[node name="SouthColl" type="CollisionShape3D" parent="Corridor" unique_id=858096658]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 2, 3)
-shape = SubResource("corridor_shape")
+[node name="SouthColl" type="CollisionShape3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, 14)
+shape = SubResource("ns_shape")
 
-[node name="SouthMesh" type="MeshInstance3D" parent="Corridor" unique_id=316954467]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.5, 2, 3)
+[node name="SouthMesh" type="MeshInstance3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, 14)
+mesh = SubResource("ns_mesh")
 material_override = SubResource("mat_wall")
-mesh = SubResource("corridor_mesh")
 
-[node name="EndColl" type="CollisionShape3D" parent="Corridor" unique_id=850120689]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2, 0)
-shape = SubResource("end_shape")
+[node name="WestColl" type="CollisionShape3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 2, 0)
+shape = SubResource("we_shape")
 
-[node name="EndMesh" type="MeshInstance3D" parent="Corridor" unique_id=2059506940]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13, 2, 0)
+[node name="WestMesh" type="MeshInstance3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 2, 0)
+mesh = SubResource("we_mesh")
 material_override = SubResource("mat_wall")
-mesh = SubResource("end_mesh")
 
-[node name="KeyPickup" type="Area3D" parent="." unique_id=1489972229]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 1, 2)
-script = ExtResource("3_wi")
-ItemId = "key"
+[node name="EastColl" type="CollisionShape3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 0)
+shape = SubResource("we_shape")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="KeyPickup" unique_id=92162305]
-shape = SubResource("keypick_shape")
+[node name="EastMesh" type="MeshInstance3D" parent="Hall"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 0)
+mesh = SubResource("we_mesh")
+material_override = SubResource("mat_wall")
 
-[node name="Model" parent="KeyPickup" unique_id=821422710 instance=ExtResource("4_key")]
+[node name="HealthPickup" parent="." instance=ExtResource("3_health")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 6)
 
-[node name="HealthPickup" parent="." unique_id=1919423955 instance=ExtResource("5_health")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 0)
+[node name="ExitZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 0)
+script = ExtResource("4_exit")
 
-[node name="ExitZone" type="Area3D" parent="." unique_id=1600336834]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.5, 1.5, 0)
-script = ExtResource("6_exit")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone" unique_id=2057319964]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone"]
 shape = SubResource("exit_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone" unique_id=197109128]
-material_override = SubResource("mat_exit")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone"]
 mesh = SubResource("exit_mesh")
+material_override = SubResource("mat_exit")
 
-[node name="Label3D" type="Label3D" parent="ExitZone" unique_id=848760232]
+[node name="Label3D" type="Label3D" parent="ExitZone"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
 text = "ВЫХОД"

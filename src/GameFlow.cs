@@ -217,9 +217,9 @@ public partial class GameFlow : Node
 		_ui.SetTip(localInfo.Role == PlayerRole.Warden ? "Ты — Надзиратель" : "Ты — Заключённый");
 	}
 
-	// Надзиратель встаёт на свою точку, заключённые выстраиваются в ряд по X
-	// вокруг общей точки. Индекс считается по отсортированному списку id, поэтому
-	// одинаков на всех пирах.
+	// Надзиратель встаёт на свою точку; каждый заключённый — в отдельную камеру.
+	// Индекс считается по отсортированному списку id, поэтому одинаков на всех
+	// пирах. Если заключённых больше, чем камер, лишние подселяются со сдвигом.
 	private static Vector3 ComputeSpawn(int playerId, PlayerRole role)
 	{
 		if (role == PlayerRole.Warden)
@@ -239,8 +239,13 @@ public partial class GameFlow : Node
 			index = 0;
 		}
 
-		float offset = (index - (prisonerIds.Count - 1) / 2f) * G.PrisonerSpawnSpacing;
-		return G.PrisonerSpawn + new Vector3(offset, 0f, 0f);
+		int cellCount = G.PrisonerCellSpawns.Length;
+		Vector3 spawn = G.PrisonerCellSpawns[index % cellCount];
+
+		// Подселение при переполнении камер — небольшой сдвиг, чтобы не спавниться
+		// точно друг в друге.
+		int overflow = index / cellCount;
+		return spawn + new Vector3(overflow * 1.5f, 0f, 0f);
 	}
 
 	private void OnNetworkError(string reason)

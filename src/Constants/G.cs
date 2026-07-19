@@ -50,13 +50,18 @@ public static class G
     // Spawn
     public static readonly Vector3 SpawnPosition = new(0, 1, 0);
 
-    // Точки спавна по ролям (применяются при старте раунда). Заключённые —
-    // внутри камеры (запертой), надзиратель — в коридоре у выхода.
-    public static readonly Vector3 WardenSpawn = new(6, 1, 0);
-    public static readonly Vector3 PrisonerSpawn = new(-8, 1, 0);
+    // Надзиратель спавнится в общем зале, у выхода.
+    public static readonly Vector3 WardenSpawn = new(8, 1, 0);
 
-    // Расстояние между заключёнными, чтобы они не спавнились друг в друге.
-    public const float PrisonerSpawnSpacing = 2f;
+    // По одной точке на камеру: каждый заключённый попадает в свою запертую
+    // клетку. Соответствуют расположению Cell0..Cell3 в main.tscn.
+    public static readonly Vector3[] PrisonerCellSpawns =
+    {
+        new(-8, 1, -10.5f),
+        new(-8, 1, -3.5f),
+        new(-8, 1, 3.5f),
+        new(-8, 1, 10.5f),
+    };
 
     // Input
     public const Key PauseKey = Key.Escape;
