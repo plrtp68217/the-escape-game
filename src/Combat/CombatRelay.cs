@@ -92,10 +92,14 @@ public partial class CombatRelay : Node
             return;
         }
 
+        // Значение лечения берём ДО Remove: при удалении последней штуки слот
+        // обнуляет Item, и slot.Item.Id после Remove кинул бы NRE — из-за этого
+        // последняя пилюля/аптечка не лечила.
+        int healAmount = HealAmountFor(slot.Item.Id);
         slot.Remove(1);
         Inventory.InventoryRelay.Instance?.BroadcastInventory(player);
 
-        int health = Mathf.Min(G.Combat.MaxHealth, player.Health + HealAmountFor(slot.Item.Id));
+        int health = Mathf.Min(G.Combat.MaxHealth, player.Health + healAmount);
         SyncVitalsTo(player, health, PlayerVitalState.Alive);
     }
 

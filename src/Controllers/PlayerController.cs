@@ -576,7 +576,7 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		Vector3 forward = -GlobalTransform.Basis.Z;
-		Vector3 position = GlobalPosition + forward * G.DropDistance + Vector3.Up * 0.3f;
+		Vector3 position = GlobalPosition + forward * G.DropDistance + Vector3.Up * G.DropHeight;
 
 		Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestDrop),
 			(long)PlayerId, slotIndex, position);
@@ -641,64 +641,26 @@ public partial class PlayerController : CharacterBody3D
 			heldItem.Monitorable = false;
 		}
 
-		NormalizeModel(model);
+		// Сначала добавляем в руку (чтобы были валидны мировые трансформы), затем
+		// нормализуем по реальному видимому размеру.
 		_hand.AddChild(model);
+		NormalizeHeldModel(model);
 	}
 
-	private static void NormalizeModel(Node3D model)
+	// Приводит модель в руке к целевому размеру и центрирует её в ладони. Размер
+	// считаем по AABB в МИРОВЫХ координатах (с учётом вложенных трансформов GLB) —
+	// иначе у моделей со вложенными узлами размер вычислялся неверно, и предмет
+	// становился гигантским (камера внутри меша → себе не видно, другим — огромный)
+	// либо исчезающе мелким.
+	private void NormalizeHeldModel(Node3D model)
 	{
-		Aabb bounds = CalculateBounds(model);
-		if (bounds.Size.LengthSquared() <= 0)
+		Inv.ModelBounds.FitVisibleSize(model, 0.25f);
+
+		// После масштабирования совмещаем центр модели с точкой руки.
+		if (Inv.ModelBounds.TryComputeWorldAabb(model, out Aabb scaled))
 		{
-			return;
+			model.GlobalPosition += _hand.GlobalPosition - scaled.GetCenter();
 		}
-
-		float maxDimension = bounds.Size[(int)bounds.Size.MaxAxisIndex()];
-
-		float targetSize = 0.25f;
-		float scale = targetSize / maxDimension;
-		model.Scale = new Vector3(scale, scale, scale);
-
-		Vector3 centerOffset = -bounds.GetCenter() * scale;
-		model.Position = centerOffset;
-	}
-
-	private static Aabb CalculateBounds(Node3D model)
-	{
-		Aabb total = new(Vector3.Zero, Vector3.Zero);
-		bool first = true;
-
-		foreach (Node child in model.GetChildren())
-		{
-			if (child is VisualInstance3D visual)
-			{
-				Aabb bounds = visual.GetAabb();
-				if (first)
-				{
-					total = bounds;
-					first = false;
-				}
-				else
-				{
-					total = total.Merge(bounds);
-				}
-			}
-			else if (child is Node3D childNode)
-			{
-				Aabb childBounds = CalculateBounds(childNode);
-				if (first)
-				{
-					total = childBounds;
-					first = false;
-				}
-				else if (childBounds.Size.LengthSquared() > 0)
-				{
-					total = total.Merge(childBounds);
-				}
-			}
-		}
-
-		return total;
 	}
 
 	public override void _Input(InputEvent @event)

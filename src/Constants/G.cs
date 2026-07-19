@@ -147,8 +147,13 @@ public static class G
         public const int SlotCount = 4;
     }
 
-    // Как далеко перед игроком спавнится выброшенный предмет.
-    public const float DropDistance = 1.1f;
+    // Куда спавнится выброшенный предмет: перед игроком и над полом, чтобы не
+    // проваливался под текстуры (у предметов нет физики — они не падают).
+    public const float DropDistance = 0.9f;
+    public const float DropHeight = 0.8f;
+    // Минимальный видимый размер выброшенного предмета — крохотные модели (пилюля)
+    // увеличиваем до него, иначе на полу их не видно. Нормальные предметы не трогаем.
+    public const float DropMinVisibleSize = 0.12f;
 
     // Двери камер
     public static class Door

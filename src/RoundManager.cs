@@ -39,9 +39,10 @@ public partial class RoundManager : Node
 
     public override void _Process(double delta)
     {
-        if (!RoundActive
-            || !Multiplayer.IsServer()
-            || GameState.CurrentPhase != GamePhase.Gameplay)
+        // Таймер авторитетен на сервере и не зависит от локальной фазы UI: пауза
+        // или открытый инвентарь у ХОСТА — это его личный экран, а раунд для
+        // остальных игроков продолжается. Единственный гейт — активность раунда.
+        if (!RoundActive || !Multiplayer.IsServer())
         {
             return;
         }
