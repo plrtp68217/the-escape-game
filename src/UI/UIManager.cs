@@ -83,6 +83,11 @@ public partial class UIManager : Node
         _tipLabel.Visible = visible;
     }
 
+    public void SetTip(string text)
+    {
+        _tipLabel.Text = text;
+    }
+
     private void InstantiateUI()
     {
         var scene = GD.Load<PackedScene>(UIRootScenePath);

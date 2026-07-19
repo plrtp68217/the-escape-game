@@ -259,8 +259,47 @@ public partial class LobbyManager : Node
 		}
 
 		_isGameStarted = true;
+
+		// Сначала раздаём и рассылаем роли (reliable-ordered гарантирует, что
+		// они дойдут до клиентов раньше, чем GameStarting), затем запускаем игру.
+		AssignRoles();
+
 		GameStarting();
 		Rpc(nameof(GameStarting));
+	}
+
+	// Только сервер. Один случайный игрок становится надзирателем, остальные —
+	// заключённые. Роли рассылаются всем пирам.
+	private void AssignRoles()
+	{
+		var ids = _players.Keys.ToList();
+		if (ids.Count == 0)
+		{
+			return;
+		}
+
+		int wardenIndex = (int)(GD.Randi() % (uint)ids.Count);
+
+		for (int i = 0; i < ids.Count; i++)
+		{
+			PlayerRole role = i == wardenIndex ? PlayerRole.Warden : PlayerRole.Prisoner;
+			SyncPlayerRole(ids[i], (int)role);
+			Rpc(nameof(SyncPlayerRole), ids[i], (int)role);
+		}
+	}
+
+	// Enum передаётся как int — так он гарантированно сериализуется в RPC.
+	[Rpc(
+		MultiplayerApi.RpcMode.Authority,
+		TransferMode = MultiplayerPeer.TransferModeEnum.Reliable
+	)]
+	private void SyncPlayerRole(long id, int role)
+	{
+		if (_players.TryGetValue(id, out var info))
+		{
+			info.Role = (PlayerRole)role;
+			LobbyUpdated?.Invoke();
+		}
 	}
 
 	public void Reset()

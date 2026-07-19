@@ -1,3 +1,4 @@
+using System.Linq;
 using Godot;
 
 namespace EscapeGame;
@@ -142,8 +143,59 @@ public partial class GameFlow : Node
 	private void OnGameStarted()
 	{
 		GameState.SetPhase(GamePhase.Gameplay);
+		ApplyRoles();
 		_ui.ShowTip(true);
 		Input.MouseMode = Input.MouseModeEnum.Captured;
+	}
+
+	// Раздаёт роли всем игрокам на этом пире: меняет модель у каждого, а своего
+	// локального игрока ставит на точку спавна его роли. Позицию задаёт только
+	// authority — MultiplayerSynchronizer разошлёт её остальным.
+	private void ApplyRoles()
+	{
+		foreach (PlayerController player in PlayerController.AllPlayers.Values)
+		{
+			if (LobbyManager.Instance.Players.TryGetValue(player.PlayerId, out var info))
+			{
+				player.ApplyRole(info.Role);
+			}
+		}
+
+		PlayerController local = PlayerController.LocalPlayer;
+		if (local == null
+			|| !LobbyManager.Instance.Players.TryGetValue(local.PlayerId, out var localInfo))
+		{
+			return;
+		}
+
+		local.GlobalPosition = ComputeSpawn(local.PlayerId, localInfo.Role);
+		_ui.SetTip(localInfo.Role == PlayerRole.Warden ? "Ты — Надзиратель" : "Ты — Заключённый");
+	}
+
+	// Надзиратель встаёт на свою точку, заключённые выстраиваются в ряд по X
+	// вокруг общей точки. Индекс считается по отсортированному списку id, поэтому
+	// одинаков на всех пирах.
+	private static Vector3 ComputeSpawn(int playerId, PlayerRole role)
+	{
+		if (role == PlayerRole.Warden)
+		{
+			return G.WardenSpawn;
+		}
+
+		var prisonerIds = LobbyManager.Instance.Players
+			.Where(pair => pair.Value.Role == PlayerRole.Prisoner)
+			.Select(pair => pair.Key)
+			.OrderBy(id => id)
+			.ToList();
+
+		int index = prisonerIds.IndexOf(playerId);
+		if (index < 0)
+		{
+			index = 0;
+		}
+
+		float offset = (index - (prisonerIds.Count - 1) / 2f) * G.PrisonerSpawnSpacing;
+		return G.PrisonerSpawn + new Vector3(offset, 0f, 0f);
 	}
 
 	private void OnNetworkError(string reason)

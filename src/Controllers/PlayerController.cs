@@ -39,6 +39,9 @@ public partial class PlayerController : CharacterBody3D
 	public static PlayerController LocalPlayer { get; private set; }
 	public static readonly Dictionary<long, PlayerController> AllPlayers = new();
 
+	// Роль в текущем раунде. Назначается в GameFlow при старте игры.
+	public PlayerRole Role { get; private set; } = PlayerRole.Prisoner;
+
 	public Inv.PlayerInventory Inventory { get; private set; }
 	public event System.Action InventoryChanged;
 
@@ -101,6 +104,41 @@ public partial class PlayerController : CharacterBody3D
 			Inv.InventoryRelay.Instance?.Rpc(nameof(Inv.InventoryRelay.SyncInventory), (long)PlayerId,
 				PackIds(), PackCounts(), Inventory.EquippedSlotIndex);
 		}
+	}
+
+	// Применяет роль игрока: запоминает её и меняет видимую модель.
+	// Вызывается на каждом пире для каждого игрока (роль берётся из
+	// синхронизированного ростера LobbyManager), поэтому не привязано к authority.
+	public void ApplyRole(PlayerRole role)
+	{
+		Role = role;
+		SwapModel(role == PlayerRole.Warden ? R.Characters.Sanitar : R.Characters.Prisoner);
+	}
+
+	private void SwapModel(string modelPath)
+	{
+		var modelRoot = GetNodeOrNull<Node3D>("Model");
+		if (modelRoot == null)
+		{
+			return;
+		}
+
+		foreach (Node child in modelRoot.GetChildren())
+		{
+			child.QueueFree();
+		}
+
+		var scene = GD.Load<PackedScene>(modelPath);
+		if (scene == null)
+		{
+			GD.PrintErr($"PlayerController: не удалось загрузить модель {modelPath}");
+			return;
+		}
+
+		var instance = scene.Instantiate<Node3D>();
+		// Разворот на 180° вокруг Y — модель смотрит вперёд (как AuxScene в player.tscn).
+		instance.Transform = new Transform3D(new Basis(Vector3.Up, Mathf.Pi), Vector3.Zero);
+		modelRoot.AddChild(instance);
 	}
 
 	public void UpdateInventory(string[] itemIds, int[] counts, int equippedIndex)

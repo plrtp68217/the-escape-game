@@ -50,6 +50,14 @@ public static class G
     // Spawn
     public static readonly Vector3 SpawnPosition = new(0, 1, 0);
 
+    // Точки спавна по ролям (применяются при старте раунда). Пока карта —
+    // плоскость, поэтому позиции временные, лишь бы стороны были разнесены.
+    public static readonly Vector3 WardenSpawn = new(0, 1, 8);
+    public static readonly Vector3 PrisonerSpawn = new(0, 1, -6);
+
+    // Расстояние между заключёнными, чтобы они не спавнились друг в друге.
+    public const float PrisonerSpawnSpacing = 2f;
+
     // Input
     public const Key PauseKey = Key.Escape;
     public const Key ScoreboardKey = Key.Tab;
