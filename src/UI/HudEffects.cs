@@ -20,6 +20,8 @@ public partial class HudEffects : Control
 
     private ColorRect _damageVignette;
     private ColorRect _healVignette;
+    private ColorRect _knockoutOverlay;
+    private ProgressBar _reviveBar;
 
     private float _damageAlpha;
     private float _healAlpha;
@@ -36,6 +38,12 @@ public partial class HudEffects : Control
 
         AddChild(_healVignette);
         AddChild(_damageVignette);
+
+        _knockoutOverlay = CreateKnockoutOverlay();
+        AddChild(_knockoutOverlay);
+
+        _reviveBar = CreateReviveBar();
+        AddChild(_reviveBar);
     }
 
     // Красная вспышка урона + тряска экрана (тряску даёт камера).
@@ -54,6 +62,25 @@ public partial class HudEffects : Control
     public void ShowHitMarker()
     {
         _hitMarkerTime = HitMarkerDuration;
+    }
+
+    // Затемнение экрана и надпись «ВАС НОКАУТИРОВАЛИ», пока игрок повержен.
+    public void ShowKnockout(bool visible)
+    {
+        _knockoutOverlay.Visible = visible;
+    }
+
+    // Прогресс подъёма поверженного союзника (0..1). Значение <= 0 скрывает бар.
+    public void SetReviveProgress(float value)
+    {
+        if (value <= 0f)
+        {
+            _reviveBar.Visible = false;
+            return;
+        }
+
+        _reviveBar.Visible = true;
+        _reviveBar.Value = Mathf.Clamp(value, 0f, 1f);
     }
 
     public override void _Process(double delta)
@@ -134,5 +161,59 @@ void fragment() {
         {
             material.SetShaderParameter("intensity", intensity);
         }
+    }
+
+    // Полупрозрачное затемнение на весь экран с крупной красной надписью.
+    private static ColorRect CreateKnockoutOverlay()
+    {
+        var overlay = new ColorRect
+        {
+            Color = new Color(0f, 0f, 0f, 0.72f),
+            MouseFilter = MouseFilterEnum.Ignore,
+            Visible = false,
+        };
+        overlay.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+
+        var label = new Label
+        {
+            Text = "ВАС НОКАУТИРОВАЛИ",
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            MouseFilter = MouseFilterEnum.Ignore,
+        };
+        label.SetAnchorsAndOffsetsPreset(LayoutPreset.FullRect);
+        label.AddThemeFontSizeOverride("font_size", 52);
+        label.AddThemeColorOverride("font_color", new Color(1f, 0.25f, 0.25f));
+        label.AddThemeColorOverride("font_outline_color", new Color(0f, 0f, 0f));
+        label.AddThemeConstantOverride("outline_size", 8);
+        overlay.AddChild(label);
+
+        return overlay;
+    }
+
+    // Полоса прогресса подъёма — по центру, чуть ниже прицела.
+    private static ProgressBar CreateReviveBar()
+    {
+        var bar = new ProgressBar
+        {
+            MinValue = 0,
+            MaxValue = 1,
+            Step = 0.01,
+            Value = 0,
+            ShowPercentage = false,
+            MouseFilter = MouseFilterEnum.Ignore,
+            Visible = false,
+        };
+
+        bar.AnchorLeft = 0.5f;
+        bar.AnchorRight = 0.5f;
+        bar.AnchorTop = 0.5f;
+        bar.AnchorBottom = 0.5f;
+        bar.OffsetLeft = -140f;
+        bar.OffsetRight = 140f;
+        bar.OffsetTop = 60f;
+        bar.OffsetBottom = 84f;
+
+        return bar;
     }
 }

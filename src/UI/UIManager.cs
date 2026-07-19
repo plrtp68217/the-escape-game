@@ -127,6 +127,12 @@ public partial class UIManager : Node
 
     public void ShowHitMarker() => _hudEffects.ShowHitMarker();
 
+    // Нокаут локального игрока: затемнение экрана и надпись.
+    public void ShowKnockout(bool visible) => _hudEffects.ShowKnockout(visible);
+
+    // Прогресс подъёма поверженного союзника (0..1, <=0 скрывает).
+    public void SetReviveProgress(float value) => _hudEffects.SetReviveProgress(value);
+
     private void InstantiateUI()
     {
         var scene = GD.Load<PackedScene>(UIRootScenePath);

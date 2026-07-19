@@ -75,7 +75,7 @@ public partial class CellDoor : StaticBody3D, IInteractable
         }
         if (IsAxeEquipped(player))
         {
-            return "Выбить топором";
+            return "ЛКМ — выбить топором";
         }
         return "Заперто — нужен ключ или топор";
     }
@@ -121,28 +121,39 @@ public partial class CellDoor : StaticBody3D, IInteractable
             return;
         }
 
-        // Заперта: сначала пробуем ключ (расходуется).
+        // Заперта: открыть можно только ключом (расходуется). Топором дверь
+        // выбивают ударами по ЛКМ — см. HitWithAxe.
         if (player.Inventory.RemoveOne(G.Door.KeyItemId))
         {
             Inventory.InventoryRelay.Instance?.BroadcastInventory(player);
             SetState(isOpen: true, locked: false);
+        }
+    }
+
+    // Удар топором по двери (только сервер, вызывается из InteractionRelay,
+    // когда заключённый бьёт по ЛКМ). Промежуточные удары считаем на сервере,
+    // рассылаем состояние только когда дверь реально распахнулась, но на каждый
+    // удар шлём отдельную реакцию — чтобы прогресс было видно.
+    public void HitWithAxe(PlayerController player)
+    {
+        if (player.Role != PlayerRole.Prisoner || _isOpen || !Locked)
+        {
             return;
         }
 
-        // Иначе выбиваем топором. Промежуточные удары считаем на сервере,
-        // рассылаем состояние только когда дверь реально распахнулась, но на
-        // каждый удар шлём отдельную реакцию — чтобы прогресс было видно.
-        if (IsAxeEquipped(player))
+        if (!IsAxeEquipped(player))
         {
-            _health--;
-            if (_health <= 0)
-            {
-                SetState(isOpen: true, locked: false);
-            }
-            else
-            {
-                Rpc(nameof(PlayStruck));
-            }
+            return;
+        }
+
+        _health--;
+        if (_health <= 0)
+        {
+            SetState(isOpen: true, locked: false);
+        }
+        else
+        {
+            Rpc(nameof(PlayStruck));
         }
     }
 

@@ -47,4 +47,29 @@ public partial class InteractionRelay : Node
 
         interactable.Interact(player);
     }
+
+    // Заключённый бьёт топором по двери (ЛКМ). Клиент присылает путь к двери,
+    // сервер проверяет и наносит удар. Отдельно от RequestInteract, т.к. это
+    // атака по ЛКМ, а не взаимодействие по F.
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void RequestAxeHit(long playerId, string doorPath)
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        PlayerController player = PlayerController.AllPlayers.Values
+            .FirstOrDefault(p => p.PlayerId == playerId);
+        if (player == null)
+        {
+            return;
+        }
+
+        Node node = GetNodeOrNull(doorPath);
+        if (node is CellDoor door && node.IsInsideTree())
+        {
+            door.HitWithAxe(player);
+        }
+    }
 }

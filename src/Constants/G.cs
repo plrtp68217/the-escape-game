@@ -130,6 +130,9 @@ public static class G
 
         // Дистанция, с которой можно поднять поверженного союзника.
         public const float ReviveRange = 2.5f;
+
+        // Сколько секунд нужно удерживать F, чтобы поднять поверженного союзника.
+        public const float ReviveHoldTime = 1.5f;
     }
 
     // Двери камер

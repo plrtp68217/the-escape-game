@@ -46,6 +46,15 @@ public partial class RoundManager : Node
             return;
         }
 
+        TickTimer(delta);
+        // Подстраховка на случай, если нокаут не был замечен событийно
+        // (например, заключённый отключился, оставив живых поверженными).
+        CheckAllDowned();
+    }
+
+    // Обратный отсчёт раунда (посекундно). По истечении времени — победа надзирателя.
+    private void TickTimer(double delta)
+    {
         _secondAccumulator += delta;
         if (_secondAccumulator < 1.0)
         {
@@ -57,6 +66,31 @@ public partial class RoundManager : Node
         Rpc(nameof(SyncTime), RemainingSeconds);
 
         if (RemainingSeconds <= 0)
+        {
+            EndRound(RoundResult.WardenWin);
+        }
+    }
+
+    // Второй путь победы надзирателя: все не сбежавшие заключённые повержены.
+    // Грейс-периода нет намеренно — поднять поверженного может только ЖИВОЙ
+    // заключённый (см. CombatRelay.RequestRevive), поэтому когда повержены все,
+    // состояние необратимо и надзиратель побеждает сразу. Вызывается событийно
+    // из CombatRelay при нокауте и как подстраховка каждый кадр.
+    public void CheckAllDowned()
+    {
+        if (!Multiplayer.IsServer() || !RoundActive)
+        {
+            return;
+        }
+
+        var active = PlayerController.AllPlayers.Values
+            .Where(p => p.Role == PlayerRole.Prisoner && !_escaped.Contains(p.PlayerId))
+            .ToList();
+
+        bool allDowned = active.Count > 0
+            && active.All(p => p.VitalState == PlayerVitalState.Downed);
+
+        if (allDowned)
         {
             EndRound(RoundResult.WardenWin);
         }
@@ -78,25 +112,6 @@ public partial class RoundManager : Node
         if (prisonerCount > 0 && _escaped.Count >= prisonerCount)
         {
             EndRound(RoundResult.PrisonersWin);
-        }
-    }
-
-    // Сервер: заключённого повергли. Если все не сбежавшие заключённые
-    // повержены — побеждает надзиратель.
-    public void OnPrisonerDowned()
-    {
-        if (!Multiplayer.IsServer() || !RoundActive)
-        {
-            return;
-        }
-
-        var active = PlayerController.AllPlayers.Values
-            .Where(p => p.Role == PlayerRole.Prisoner && !_escaped.Contains(p.PlayerId))
-            .ToList();
-
-        if (active.Count > 0 && active.All(p => p.VitalState == PlayerVitalState.Downed))
-        {
-            EndRound(RoundResult.WardenWin);
         }
     }
 

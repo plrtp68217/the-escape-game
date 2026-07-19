@@ -82,7 +82,23 @@ public partial class GameFlow : Node
 
 		// Подсказка, таймер и здоровье показываются только в самой игре.
 		bool inGameplay = GameState.CurrentPhase == GamePhase.Gameplay;
-		_ui.SetInteractPrompt(inGameplay ? local.GetInteractPrompt() : string.Empty);
+
+		// Рядом поверженный союзник — подсказка «удерживайте F» и прогресс-бар
+		// подъёма; иначе — обычная подсказка взаимодействия.
+		if (inGameplay && local.HasReviveTarget)
+		{
+			_ui.SetInteractPrompt("Удерживайте [F], чтобы поднять");
+			_ui.SetReviveProgress(local.ReviveProgress);
+		}
+		else
+		{
+			_ui.SetInteractPrompt(inGameplay ? local.GetInteractPrompt() : string.Empty);
+			_ui.SetReviveProgress(-1f);
+		}
+
+		// Собственный нокаут: затемнение экрана и надпись.
+		_ui.ShowKnockout(inGameplay && local.VitalState == PlayerVitalState.Downed);
+
 		_ui.SetTimer(
 			inGameplay && RoundManager.Instance.RoundActive
 				? FormatTime(RoundManager.Instance.RemainingSeconds)

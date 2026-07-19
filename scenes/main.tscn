@@ -55,10 +55,10 @@ _spawnable_scenes = PackedStringArray("uid://cd1e025wlou5a")
 spawn_path = NodePath("../Players")
 
 [node name="DirectionalLightPivot" type="Node3D" parent="." unique_id=1452202714]
-transform = Transform3D(0.57215637, 3.5849656e-08, -0.82014453, 0.82014453, -2.5009749e-08, 0.57215637, 0, -1, -4.371139e-08, 0, 23, 0)
+transform = Transform3D(0.99999994, 0, -4.3711385e-08, 4.3711385e-08, 1.9106855e-15, 0.99999994, 0, -1, 1.9106853e-15, 0, 23, 0)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot" unique_id=1338227163]
-transform = Transform3D(1, 0, 0, 0, 0.8660254, -0.5, 0, 0.5, 0.8660254, 0, 1.1368684e-13, 62)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1368684e-13, 62)
 
 [node name="Cell0" parent="." unique_id=1616161363 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -10.5)
@@ -112,6 +112,7 @@ mesh = SubResource("we_mesh")
 
 [node name="HealthPickup" parent="." unique_id=1704881896 instance=ExtResource("3_health")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 6)
+Count = 1
 
 [node name="ExitZone" type="Area3D" parent="." unique_id=1392575960]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 0)

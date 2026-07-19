@@ -59,6 +59,21 @@ public partial class PlayerController : CharacterBody3D
 
 	private Node3D _model;
 	private Label3D _nameTag;
+	private string _baseName = string.Empty;
+
+	// Подъём поверженного союзника: цель рядом и накопленный прогресс удержания F.
+	private PlayerController _reviveTarget;
+	private float _reviveProgress;
+	// Кому уже отправили запрос на подъём — чтобы не потратить второй медикамент,
+	// пока по сети не пришло обновление состояния цели.
+	private PlayerController _reviveSentTo;
+
+	// Материал-подсветки поверженного игрока (общий на всех, ленивая инициализация).
+	private static StandardMaterial3D _downedHighlight;
+
+	public bool HasReviveTarget =>
+		_reviveTarget != null && GodotObject.IsInstanceValid(_reviveTarget);
+	public float ReviveProgress => _reviveProgress;
 
 	public List<Interaction.IInteractable> NearbyInteractables { get; } = new();
 
@@ -159,7 +174,8 @@ public partial class PlayerController : CharacterBody3D
 
 		if (_nameTag != null)
 		{
-			_nameTag.Text = info.Name;
+			_baseName = info.Name;
+			UpdateNameTag();
 		}
 
 		if (_roleModelApplied && info.Role == Role)
@@ -226,6 +242,82 @@ public partial class PlayerController : CharacterBody3D
 			_model.Rotation = state == PlayerVitalState.Downed
 				? new Vector3(Mathf.DegToRad(80f), 0f, 0f)
 				: Vector3.Zero;
+		}
+
+		// Нокаут виден остальным: красная подсветка модели и подпись над головой.
+		bool downed = state == PlayerVitalState.Downed;
+		SetHighlight(downed);
+		UpdateNameTag();
+
+		// Сброс собственного накопленного подъёма, если сам ушёл в нокаут.
+		if (downed)
+		{
+			_reviveTarget = null;
+			_reviveProgress = 0f;
+			_reviveSentTo = null;
+		}
+	}
+
+	// Подпись над головой: имя, а для поверженного — красная пометка «НОКАУТИРОВАН».
+	private void UpdateNameTag()
+	{
+		if (_nameTag == null)
+		{
+			return;
+		}
+
+		if (VitalState == PlayerVitalState.Downed)
+		{
+			_nameTag.Text = $"{_baseName}\n[НОКАУТИРОВАН]";
+			_nameTag.Modulate = new Color(1f, 0.3f, 0.3f);
+		}
+		else
+		{
+			_nameTag.Text = _baseName;
+			_nameTag.Modulate = new Color(1f, 1f, 1f);
+		}
+	}
+
+	// Подсветка модели поверженного игрока — материал поверх меша (material_overlay),
+	// который не заменяет собственные материалы модели и легко снимается.
+	private void SetHighlight(bool on)
+	{
+		if (_model == null)
+		{
+			return;
+		}
+
+		ApplyOverlay(_model, on ? GetDownedHighlight() : null);
+	}
+
+	private static StandardMaterial3D GetDownedHighlight()
+	{
+		if (_downedHighlight == null)
+		{
+			_downedHighlight = new StandardMaterial3D
+			{
+				AlbedoColor = new Color(1f, 0.15f, 0.15f, 0.4f),
+				Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+				ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+				EmissionEnabled = true,
+				Emission = new Color(1f, 0.1f, 0.1f),
+				EmissionEnergyMultiplier = 0.6f,
+			};
+		}
+
+		return _downedHighlight;
+	}
+
+	private static void ApplyOverlay(Node node, Material overlay)
+	{
+		foreach (Node child in node.GetChildren())
+		{
+			if (child is GeometryInstance3D geometry)
+			{
+				geometry.MaterialOverlay = overlay;
+			}
+
+			ApplyOverlay(child, overlay);
 		}
 	}
 
@@ -325,22 +417,18 @@ public partial class PlayerController : CharacterBody3D
 		{
 			Interaction.InteractionRelay.Instance?.RpcId(1, nameof(Interaction.InteractionRelay.RequestInteract),
 				(long)PlayerId, node.GetPath().ToString());
-			return;
 		}
 
-		// Нет объекта под рукой — заключённый пробует поднять поверженного
-		// союзника рядом (сервер сам найдёт цель и проверит наличие медикамента).
-		if (Role == PlayerRole.Prisoner)
-		{
-			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestRevive), (long)PlayerId);
-		}
+		// Подъём поверженного союзника — не мгновенный: удерживание F
+		// накапливается в UpdateRevive (см. _PhysicsProcess).
 	}
 
-	// Надзиратель бьёт топором: луч из камеры, ближайшего заключённого — на сервер.
+	// Удар топором по ЛКМ. Надзиратель бьёт заключённого, заключённый — выбивает
+	// дверь. Луч из камеры, цель отправляется на сервер. По надзирателю бить
+	// нельзя: заключённый попадает только по дверям.
 	private void TryAttack()
 	{
 		if (!IsMultiplayerAuthority()
-			|| Role != PlayerRole.Warden
 			|| VitalState != PlayerVitalState.Alive
 			|| Inventory.EquippedSlot?.Item?.Id != G.Door.AxeItemId)
 		{
@@ -365,12 +453,25 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		if (hit["collider"].As<Node>() is PlayerController target && target.Role == PlayerRole.Prisoner)
+		Node collider = hit["collider"].As<Node>();
+
+		if (Role == PlayerRole.Warden)
 		{
-			// Отметка попадания — оптимистично по лучу; урон подтвердит сервер.
-			LocalHitConfirmed?.Invoke();
-			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestAttack),
-				(long)PlayerId, (long)target.PlayerId);
+			if (collider is PlayerController target && target.Role == PlayerRole.Prisoner)
+			{
+				// Отметка попадания — оптимистично по лучу; урон подтвердит сервер.
+				LocalHitConfirmed?.Invoke();
+				Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestAttack),
+					(long)PlayerId, (long)target.PlayerId);
+			}
+			return;
+		}
+
+		// Заключённый: по игрокам урона нет, но по двери — выбивание.
+		if (collider is Interaction.CellDoor door)
+		{
+			Interaction.InteractionRelay.Instance?.RpcId(1, nameof(Interaction.InteractionRelay.RequestAxeHit),
+				(long)PlayerId, door.GetPath().ToString());
 		}
 	}
 
@@ -604,6 +705,85 @@ public partial class PlayerController : CharacterBody3D
 			_attackQueued = false;
 			TryAttack();
 		}
+
+		UpdateRevive((float)delta);
+	}
+
+	// Подъём поверженного союзника удержанием F. Прогресс копится, пока рядом
+	// есть цель и зажата клавиша; по заполнении шлём запрос на сервер.
+	private void UpdateRevive(float delta)
+	{
+		if (Role != PlayerRole.Prisoner)
+		{
+			_reviveTarget = null;
+			_reviveProgress = 0f;
+			_reviveSentTo = null;
+			return;
+		}
+
+		_reviveTarget = FindReviveTarget();
+
+		if (_reviveTarget == null || !Input.IsActionPressed("interact"))
+		{
+			_reviveProgress = 0f;
+			_reviveSentTo = null;
+			return;
+		}
+
+		// Уже отправили запрос на эту цель — ждём обновления её состояния по сети,
+		// держим бар заполненным и не тратим второй медикамент.
+		if (_reviveSentTo == _reviveTarget)
+		{
+			_reviveProgress = 1f;
+			return;
+		}
+
+		_reviveProgress += delta / G.Combat.ReviveHoldTime;
+		if (_reviveProgress >= 1f)
+		{
+			_reviveProgress = 1f;
+			_reviveSentTo = _reviveTarget;
+			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestRevive),
+				(long)PlayerId);
+		}
+	}
+
+	// Ближайший поверженный союзник в радиусе подъёма. Требует медикамент в
+	// инвентаре — как и серверная проверка в CombatRelay.RequestRevive, чтобы не
+	// показывать подсказку/прогресс, когда поднять всё равно нечем.
+	private PlayerController FindReviveTarget()
+	{
+		if (!HasMedical())
+		{
+			return null;
+		}
+
+		PlayerController best = null;
+		float bestDistance = G.Combat.ReviveRange * G.Combat.ReviveRange;
+
+		foreach (PlayerController p in AllPlayers.Values)
+		{
+			if (p == this
+				|| p.Role != PlayerRole.Prisoner
+				|| p.VitalState != PlayerVitalState.Downed)
+			{
+				continue;
+			}
+
+			float distance = p.GlobalPosition.DistanceSquaredTo(GlobalPosition);
+			if (distance <= bestDistance)
+			{
+				bestDistance = distance;
+				best = p;
+			}
+		}
+
+		return best;
+	}
+
+	private bool HasMedical()
+	{
+		return Inventory.Has("syringe") || Inventory.Has("health");
 	}
 
 	private Vector3 ReadMovementInput()

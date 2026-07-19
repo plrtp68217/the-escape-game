@@ -56,9 +56,10 @@ public partial class CombatRelay : Node
         bool downed = health <= 0;
         SyncVitalsTo(target, health, downed ? PlayerVitalState.Downed : PlayerVitalState.Alive);
 
+        // Если это был последний живой заключённый — надзиратель побеждает сразу.
         if (downed)
         {
-            RoundManager.Instance?.OnPrisonerDowned();
+            RoundManager.Instance?.CheckAllDowned();
         }
     }
 
