@@ -18,6 +18,7 @@ public partial class CellDoor : StaticBody3D, IInteractable
     private CollisionShape3D _collision;
     private Node3D _visual;
     private Area3D _zone;
+    private Tween _doorTween;
 
     public override void _Ready()
     {
@@ -129,13 +130,18 @@ public partial class CellDoor : StaticBody3D, IInteractable
         }
 
         // Иначе выбиваем топором. Промежуточные удары считаем на сервере,
-        // рассылаем состояние только когда дверь реально распахнулась.
+        // рассылаем состояние только когда дверь реально распахнулась, но на
+        // каждый удар шлём отдельную реакцию — чтобы прогресс было видно.
         if (IsAxeEquipped(player))
         {
             _health--;
             if (_health <= 0)
             {
                 SetState(isOpen: true, locked: false);
+            }
+            else
+            {
+                Rpc(nameof(PlayStruck));
             }
         }
     }
@@ -153,14 +159,81 @@ public partial class CellDoor : StaticBody3D, IInteractable
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     private void SyncState(bool isOpen, bool locked)
     {
+        bool wasOpen = _isOpen;
         _isOpen = isOpen;
         Locked = locked;
-        ApplyVisual();
+
+        // Проходимость меняем сразу, а визуал доигрываем анимацией.
+        _collision.Disabled = _isOpen;
+
+        if (isOpen && !wasOpen)
+        {
+            AnimateOpen();
+        }
+        else if (!isOpen && wasOpen)
+        {
+            AnimateClose();
+        }
+        else
+        {
+            // Дверь осталась закрытой (например, щёлкнул замок) — короткий толчок.
+            _visual.Visible = true;
+            ShakeVisual();
+        }
     }
 
+    // Реакция на удар топором, который ещё не выбил дверь (сервер → все пиры).
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    private void PlayStruck()
+    {
+        ShakeVisual();
+    }
+
+    // Начальное состояние двери (без анимации).
     private void ApplyVisual()
     {
         _collision.Disabled = _isOpen;
         _visual.Visible = !_isOpen;
+    }
+
+    // Распахивание: дверь резко поворачивается и исчезает.
+    private void AnimateOpen()
+    {
+        _doorTween?.Kill();
+        _visual.Visible = true;
+        _visual.Rotation = Vector3.Zero;
+
+        _doorTween = CreateTween();
+        _doorTween.TweenProperty(_visual, "rotation:y", Mathf.DegToRad(100f), 0.25)
+            .SetTrans(Tween.TransitionType.Cubic).SetEase(Tween.EaseType.Out);
+        _doorTween.TweenCallback(Callable.From(() =>
+        {
+            _visual.Visible = false;
+            _visual.Rotation = Vector3.Zero;
+        }));
+    }
+
+    // Захлопывание: дверь появляется с лёгким «ударом» (толчок туда-обратно).
+    private void AnimateClose()
+    {
+        _doorTween?.Kill();
+        _visual.Visible = true;
+        _visual.Rotation = new Vector3(0f, Mathf.DegToRad(-20f), 0f);
+
+        _doorTween = CreateTween();
+        _doorTween.TweenProperty(_visual, "rotation:y", 0f, 0.15)
+            .SetTrans(Tween.TransitionType.Back).SetEase(Tween.EaseType.Out);
+    }
+
+    // Короткая дрожь двери — удар топором или щелчок замка.
+    private void ShakeVisual()
+    {
+        _doorTween?.Kill();
+        _visual.Rotation = Vector3.Zero;
+
+        _doorTween = CreateTween();
+        _doorTween.TweenProperty(_visual, "rotation:z", Mathf.DegToRad(3f), 0.03);
+        _doorTween.TweenProperty(_visual, "rotation:z", Mathf.DegToRad(-2f), 0.05);
+        _doorTween.TweenProperty(_visual, "rotation:z", 0f, 0.05);
     }
 }

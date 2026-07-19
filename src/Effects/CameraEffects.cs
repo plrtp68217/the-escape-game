@@ -19,11 +19,32 @@ public class CameraEffects
     private bool _wasOnFloor;
     private float _lastVerticalVelocity;
 
+    // Тряска (trauma): накапливается при уроне, затухает со временем.
+    private float _trauma;
+    // Толчок (punch): мгновенное смещение/поворот, плавно возвращается к нулю.
+    private Vector3 _punchPosition;
+    private Vector3 _punchRotation;
+    private readonly RandomNumberGenerator _rng = new();
+
     public CameraEffects(Camera3D camera)
     {
         _camera = camera;
         _basePosition = camera.Position;
         _baseRotation = camera.Rotation;
+        _rng.Randomize();
+    }
+
+    // Добавить тряску (0..1). Вызывается при получении урона.
+    public void AddTrauma(float amount)
+    {
+        _trauma = Mathf.Clamp(_trauma + amount, 0f, 1f);
+    }
+
+    // Резкий толчок камеры (например, отдача удара топором). Затухает сам.
+    public void Punch(Vector3 positionOffset, Vector3 rotationOffset)
+    {
+        _punchPosition = positionOffset;
+        _punchRotation = rotationOffset;
     }
 
     public void Update(Vector3 velocity, bool isOnFloor, float speed, float delta)
@@ -36,6 +57,8 @@ public class CameraEffects
         ApplyBobbing(ref positionOffset, horizontalSpeed, speed, isOnFloor, delta);
         ApplyStrafeTilt(ref rotationOffset);
         ApplyLandingImpact(ref positionOffset, isOnFloor, delta);
+        ApplyShake(ref positionOffset, ref rotationOffset, delta);
+        ApplyPunch(ref positionOffset, ref rotationOffset, delta);
 
         _camera.Position = _basePosition + positionOffset;
         _camera.Rotation = _baseRotation + rotationOffset;
@@ -77,5 +100,31 @@ public class CameraEffects
 
         _landingImpact = Mathf.MoveToward(_landingImpact, 0f, G.Camera.LandingRecovery * delta);
         positionOffset.Y -= _landingImpact;
+    }
+
+    // Тряска: сила растёт квадратично от травмы, направление — случайное.
+    // Так резкие толчки заметны, а «хвост» быстро успокаивается.
+    private void ApplyShake(ref Vector3 positionOffset, ref Vector3 rotationOffset, float delta)
+    {
+        if (_trauma > 0f)
+        {
+            float shake = _trauma * _trauma;
+
+            positionOffset.X += _rng.RandfRange(-1f, 1f) * G.Camera.ShakeMaxOffset * shake;
+            positionOffset.Y += _rng.RandfRange(-1f, 1f) * G.Camera.ShakeMaxOffset * shake;
+            rotationOffset.Z += _rng.RandfRange(-1f, 1f) * G.Camera.ShakeMaxRotation * shake;
+            rotationOffset.X += _rng.RandfRange(-1f, 1f) * G.Camera.ShakeMaxRotation * shake;
+
+            _trauma = Mathf.MoveToward(_trauma, 0f, G.Camera.ShakeDecay * delta);
+        }
+    }
+
+    private void ApplyPunch(ref Vector3 positionOffset, ref Vector3 rotationOffset, float delta)
+    {
+        positionOffset += _punchPosition;
+        rotationOffset += _punchRotation;
+
+        _punchPosition = _punchPosition.MoveToward(Vector3.Zero, G.Camera.PunchPositionRecovery * delta);
+        _punchRotation = _punchRotation.MoveToward(Vector3.Zero, G.Camera.PunchRotationRecovery * delta);
     }
 }

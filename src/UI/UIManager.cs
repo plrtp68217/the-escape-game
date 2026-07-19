@@ -17,6 +17,7 @@ public partial class UIManager : Node
     private Scoreboard _scoreboard;
     private InventoryUI _inventory;
     private RoundOverMenu _roundOverMenu;
+    private HudEffects _hudEffects;
     private Label _tipLabel;
     private Label _promptLabel;
     private Label _timerLabel;
@@ -119,6 +120,13 @@ public partial class UIManager : Node
         _roundOverMenu.SetResult(text);
     }
 
+    // Визуальный фидбек боя (проксируется на слой HudEffects).
+    public void FlashDamage() => _hudEffects.FlashDamage();
+
+    public void FlashHeal() => _hudEffects.FlashHeal();
+
+    public void ShowHitMarker() => _hudEffects.ShowHitMarker();
+
     private void InstantiateUI()
     {
         var scene = GD.Load<PackedScene>(UIRootScenePath);
@@ -131,6 +139,7 @@ public partial class UIManager : Node
         _pauseMenu = _screenManager.GetNode<PauseMenu>("PauseMenu");
         _scoreboard = _screenManager.GetNode<Scoreboard>("Scoreboard");
         _roundOverMenu = _screenManager.GetNode<RoundOverMenu>("RoundOverMenu");
+        _hudEffects = _screenManager.GetNode<HudEffects>("HudEffects");
         _tipLabel = _screenManager.GetNode<Label>("TipLabel");
         _promptLabel = _screenManager.GetNode<Label>("InteractPrompt");
         _timerLabel = _screenManager.GetNode<Label>("TimerLabel");

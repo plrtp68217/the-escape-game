@@ -11,11 +11,11 @@ size = Vector3(60, 2, 60)
 [sub_resource type="BoxMesh" id="ground_mesh"]
 size = Vector3(60, 2, 60)
 
-[sub_resource type="StandardMaterial3D" id="mat_wall"]
-albedo_color = Color(0.5, 0.5, 0.55, 1)
-
 [sub_resource type="BoxShape3D" id="ns_shape"]
 size = Vector3(30.5, 4, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.5, 0.5, 0.55, 1)
 
 [sub_resource type="BoxMesh" id="ns_mesh"]
 size = Vector3(30.5, 4, 0.3)
@@ -29,101 +29,102 @@ size = Vector3(0.3, 4, 28)
 [sub_resource type="BoxShape3D" id="exit_shape"]
 size = Vector3(2.5, 3, 26)
 
-[sub_resource type="BoxMesh" id="exit_mesh"]
-size = Vector3(2.5, 3, 26)
-
 [sub_resource type="StandardMaterial3D" id="mat_exit"]
 transparency = 1
 albedo_color = Color(0.2, 0.9, 0.3, 0.25)
 
-[node name="Main" type="Node3D"]
+[sub_resource type="BoxMesh" id="exit_mesh"]
+size = Vector3(2.5, 3, 26)
+
+[node name="Main" type="Node3D" unique_id=1187686429]
 script = ExtResource("1_main")
 
-[node name="Ground" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1000922661]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1488583136]
 shape = SubResource("ground_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=485893619]
 mesh = SubResource("ground_mesh")
 
-[node name="Players" type="Node3D" parent="."]
+[node name="Players" type="Node3D" parent="." unique_id=848124158]
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=1950020329]
 _spawnable_scenes = PackedStringArray("uid://cd1e025wlou5a")
 spawn_path = NodePath("../Players")
 
-[node name="DirectionalLightPivot" type="Node3D" parent="."]
+[node name="DirectionalLightPivot" type="Node3D" parent="." unique_id=1452202714]
 transform = Transform3D(0.57215637, 3.5849656e-08, -0.82014453, 0.82014453, -2.5009749e-08, 0.57215637, 0, -1, -4.371139e-08, 0, 23, 0)
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot" unique_id=1338227163]
 transform = Transform3D(1, 0, 0, 0, 0.8660254, -0.5, 0, 0.5, 0.8660254, 0, 1.1368684e-13, 62)
 
-[node name="Cell0" parent="." instance=ExtResource("2_cell")]
+[node name="Cell0" parent="." unique_id=1616161363 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -10.5)
 
-[node name="Cell1" parent="." instance=ExtResource("2_cell")]
+[node name="Cell1" parent="." unique_id=439962297 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -3.5)
 
-[node name="Cell2" parent="." instance=ExtResource("2_cell")]
+[node name="Cell2" parent="." unique_id=62329845 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 3.5)
 
-[node name="Cell3" parent="." instance=ExtResource("2_cell")]
+[node name="Cell3" parent="." unique_id=162677311 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 10.5)
 
-[node name="Hall" type="StaticBody3D" parent="."]
+[node name="Hall" type="StaticBody3D" parent="." unique_id=1347162961]
 
-[node name="NorthColl" type="CollisionShape3D" parent="Hall"]
+[node name="NorthColl" type="CollisionShape3D" parent="Hall" unique_id=1303921313]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, -14)
 shape = SubResource("ns_shape")
 
-[node name="NorthMesh" type="MeshInstance3D" parent="Hall"]
+[node name="NorthMesh" type="MeshInstance3D" parent="Hall" unique_id=928528773]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, -14)
-mesh = SubResource("ns_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("ns_mesh")
 
-[node name="SouthColl" type="CollisionShape3D" parent="Hall"]
+[node name="SouthColl" type="CollisionShape3D" parent="Hall" unique_id=878818715]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, 14)
 shape = SubResource("ns_shape")
 
-[node name="SouthMesh" type="MeshInstance3D" parent="Hall"]
+[node name="SouthMesh" type="MeshInstance3D" parent="Hall" unique_id=1140196394]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, 14)
+material_override = SubResource("mat_wall")
 mesh = SubResource("ns_mesh")
-material_override = SubResource("mat_wall")
 
-[node name="WestColl" type="CollisionShape3D" parent="Hall"]
+[node name="WestColl" type="CollisionShape3D" parent="Hall" unique_id=177002209]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 2, 0)
 shape = SubResource("we_shape")
 
-[node name="WestMesh" type="MeshInstance3D" parent="Hall"]
+[node name="WestMesh" type="MeshInstance3D" parent="Hall" unique_id=587583181]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 2, 0)
-mesh = SubResource("we_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("we_mesh")
 
-[node name="EastColl" type="CollisionShape3D" parent="Hall"]
+[node name="EastColl" type="CollisionShape3D" parent="Hall" unique_id=953400173]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 0)
 shape = SubResource("we_shape")
 
-[node name="EastMesh" type="MeshInstance3D" parent="Hall"]
+[node name="EastMesh" type="MeshInstance3D" parent="Hall" unique_id=1660745803]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 0)
-mesh = SubResource("we_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("we_mesh")
 
-[node name="HealthPickup" parent="." instance=ExtResource("3_health")]
+[node name="HealthPickup" parent="." unique_id=1704881896 instance=ExtResource("3_health")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 6)
 
-[node name="ExitZone" type="Area3D" parent="."]
+[node name="ExitZone" type="Area3D" parent="." unique_id=1392575960]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 0)
 script = ExtResource("4_exit")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone" unique_id=1643530693]
 shape = SubResource("exit_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone"]
-mesh = SubResource("exit_mesh")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone" unique_id=129427626]
 material_override = SubResource("mat_exit")
+mesh = SubResource("exit_mesh")
 
-[node name="Label3D" type="Label3D" parent="ExitZone"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 0)
+[node name="Label3D" type="Label3D" parent="ExitZone" unique_id=793100342]
+transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 1.2, 0)
 text = "ВЫХОД"
+font_size = 50

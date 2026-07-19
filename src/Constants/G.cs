@@ -45,6 +45,28 @@ public static class G
         // Скорость, с которой камера возвращается в исходное положение
         // после приземления. Больше значение — быстрее отскок.
         public const float LandingRecovery = 10f;
+
+        // --- Тряска камеры (trauma-based) ---
+        // Скорость затухания тряски: сколько единиц «травмы» уходит в секунду.
+        public const float ShakeDecay = 2.0f;
+
+        // Максимальное смещение камеры (в метрах) при полной травме.
+        public const float ShakeMaxOffset = 0.14f;
+
+        // Максимальный поворот камеры (в радианах) при полной травме.
+        public const float ShakeMaxRotation = 0.1f;
+
+        // --- Толчок камеры (punch) при действии, например ударе топором ---
+        // Скорость возврата смещения и поворота после толчка (больше — быстрее).
+        public const float PunchPositionRecovery = 0.6f;
+        public const float PunchRotationRecovery = 1.6f;
+    }
+
+    // Триггеры визуального фидбека (тряска/оверлеи при событиях).
+    public static class Feedback
+    {
+        // Сколько «травмы» добавляет получение урона (0..1).
+        public const float DamageTrauma = 0.7f;
     }
 
     // Spawn

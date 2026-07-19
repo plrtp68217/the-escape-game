@@ -71,6 +71,12 @@ public partial class GameFlow : Node
 		{
 			_ui.Inventory.Bind(local.Inventory);
 			local.InventoryChanged += () => _ui.Inventory.Refresh();
+
+			// Визуальный фидбек боя: вспышки урона/лечения и хитмаркер.
+			local.LocalDamaged += _ui.FlashDamage;
+			local.LocalHealed += _ui.FlashHeal;
+			local.LocalHitConfirmed += _ui.ShowHitMarker;
+
 			_inventoryBound = true;
 		}
 

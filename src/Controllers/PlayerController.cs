@@ -49,6 +49,14 @@ public partial class PlayerController : CharacterBody3D
 
 	public Inv.PlayerInventory Inventory { get; private set; }
 	public event System.Action InventoryChanged;
+
+	// События визуального фидбека локального игрока (HUD-оверлеи).
+	// Тряску/отдачу камеры контроллер применяет сам, а вспышки на экране
+	// показывает через GameFlow, который подписан на эти события.
+	public event System.Action LocalDamaged;
+	public event System.Action LocalHealed;
+	public event System.Action LocalHitConfirmed;
+
 	private Node3D _model;
 	private Label3D _nameTag;
 
@@ -60,6 +68,8 @@ public partial class PlayerController : CharacterBody3D
 	private Node3D _pivot;
 	private Camera3D _camera;
 	private Marker3D _hand;
+	private Vector3 _handBaseRotation;
+	private Tween _swingTween;
 	private CameraEffects _cameraEffects;
 
 	public override void _EnterTree()
@@ -86,6 +96,7 @@ public partial class PlayerController : CharacterBody3D
 		_pivot = GetNode<Node3D>("Pivot");
 		_camera = GetNode<Camera3D>("Pivot/Camera3D");
 		_hand = GetNode<Marker3D>("Pivot/Hand");
+		_handBaseRotation = _hand.Rotation;
 		_model = GetNode<Node3D>("Model");
 		_nameTag = GetNodeOrNull<Label3D>("NameTag");
 		_cameraEffects = new CameraEffects(_camera);
@@ -190,8 +201,24 @@ public partial class PlayerController : CharacterBody3D
 	// Применяет здоровье и состояние (приходит от CombatRelay на всех пирах).
 	public void ApplyVitals(int health, PlayerVitalState state)
 	{
+		int previousHealth = Health;
 		Health = health;
 		VitalState = state;
+
+		// Визуальный фидбек — только для своего игрока и только на реальное
+		// изменение здоровья (сброс в начале раунда 100→100 не считается).
+		if (IsMultiplayerAuthority())
+		{
+			if (health < previousHealth)
+			{
+				_cameraEffects?.AddTrauma(G.Feedback.DamageTrauma);
+				LocalDamaged?.Invoke();
+			}
+			else if (health > previousHealth)
+			{
+				LocalHealed?.Invoke();
+			}
+		}
 
 		// Поверженного наклоняем — грубый визуальный маркер (без анимации).
 		if (_model != null)
@@ -320,6 +347,12 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
+		// Замах виден всегда, независимо от попадания — вес удара чувствуется.
+		PlaySwing();
+		_cameraEffects?.Punch(
+			new Vector3(0f, -0.03f, 0f),
+			new Vector3(Mathf.DegToRad(3f), 0f, 0f));
+
 		Vector3 from = _camera.GlobalPosition;
 		Vector3 to = from + (-_camera.GlobalTransform.Basis.Z) * G.Combat.AttackRange;
 
@@ -334,9 +367,31 @@ public partial class PlayerController : CharacterBody3D
 
 		if (hit["collider"].As<Node>() is PlayerController target && target.Role == PlayerRole.Prisoner)
 		{
+			// Отметка попадания — оптимистично по лучу; урон подтвердит сервер.
+			LocalHitConfirmed?.Invoke();
 			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestAttack),
 				(long)PlayerId, (long)target.PlayerId);
 		}
+	}
+
+	// Быстрый замах экипированной модели в руке: рубящее движение и возврат.
+	private void PlaySwing()
+	{
+		if (_hand == null)
+		{
+			return;
+		}
+
+		_swingTween?.Kill();
+		_hand.Rotation = _handBaseRotation;
+
+		Vector3 swung = _handBaseRotation + new Vector3(Mathf.DegToRad(-75f), 0f, Mathf.DegToRad(20f));
+
+		_swingTween = CreateTween();
+		_swingTween.TweenProperty(_hand, "rotation", swung, 0.08)
+			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.Out);
+		_swingTween.TweenProperty(_hand, "rotation", _handBaseRotation, 0.22)
+			.SetTrans(Tween.TransitionType.Quad).SetEase(Tween.EaseType.In);
 	}
 
 	// Использовать экипированный расходник (аптечку/шприц) на себе.
@@ -524,9 +579,11 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
-		// Поверженный игрок не двигается — ждёт подъёма.
+		// Поверженный игрок не двигается — ждёт подъёма. Но эффекты камеры
+		// (затухание тряски от последнего удара) продолжаем обновлять.
 		if (VitalState != PlayerVitalState.Alive)
 		{
+			_cameraEffects?.Update(Vector3.Zero, IsOnFloor(), Speed, (float)delta);
 			return;
 		}
 
