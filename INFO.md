@@ -52,3 +52,15 @@
     ]
 }
 ```
+
+```json
+//.vscode/settings.json
+// Файлы формата .uid и .godot будут не видны в vscode
+{   
+    "godotTools.editorPath.godot4": "ur_godot_path",
+     "files.exclude": {
+        "**/*.uid": true,
+        "**/.godot": true
+    }
+}
+```
