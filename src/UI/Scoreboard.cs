@@ -57,8 +57,22 @@ public partial class Scoreboard : Control
 
     private void Refresh()
     {
-        var lines = LobbyManager.Instance.Players.Values.Select(p => p.Name).ToArray();
+        var lines = LobbyManager.Instance.Players.Values.Select(FormatPlayer).ToArray();
 
         _playerListLabel.Text = lines.Length > 0 ? string.Join("\n", lines) : G.Messages.NoPlayers;
+    }
+
+    private static string FormatPlayer(LobbyPlayerInfo info)
+    {
+        string role = info.Role == PlayerRole.Warden ? "Надзиратель" : "Заключённый";
+
+        string status = string.Empty;
+        if (PlayerController.AllPlayers.TryGetValue(info.Id, out PlayerController player)
+            && player.VitalState == PlayerVitalState.Downed)
+        {
+            status = " (повержен)";
+        }
+
+        return $"{info.Name} — {role}{status}";
     }
 }
