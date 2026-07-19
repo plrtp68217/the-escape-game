@@ -9,5 +9,6 @@ public enum GamePhase
 	Lobby,
 	Gameplay,
 	Paused,
-	Inventory
+	Inventory,
+	RoundOver
 }

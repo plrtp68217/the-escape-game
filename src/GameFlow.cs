@@ -37,6 +37,8 @@ public partial class GameFlow : Node
 		LobbyManager.Instance.GameStarted += OnGameStarted;
 		LobbyManager.Instance.JoinRejectedGameInProgress += OnJoinRejected;
 
+		RoundManager.Instance.RoundEnded += OnRoundEnded;
+
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 		GameState.SetPhase(GamePhase.MainMenu);
 
@@ -72,9 +74,22 @@ public partial class GameFlow : Node
 			_inventoryBound = true;
 		}
 
-		// Подсказка взаимодействия показывается только в самой игре.
-		_ui.SetInteractPrompt(
-			GameState.CurrentPhase == GamePhase.Gameplay ? local.GetInteractPrompt() : string.Empty);
+		// Подсказка взаимодействия и таймер показываются только в самой игре.
+		bool inGameplay = GameState.CurrentPhase == GamePhase.Gameplay;
+		_ui.SetInteractPrompt(inGameplay ? local.GetInteractPrompt() : string.Empty);
+		_ui.SetTimer(
+			inGameplay && RoundManager.Instance.RoundActive
+				? FormatTime(RoundManager.Instance.RemainingSeconds)
+				: string.Empty);
+	}
+
+	private static string FormatTime(int seconds)
+	{
+		if (seconds < 0)
+		{
+			seconds = 0;
+		}
+		return $"{seconds / 60}:{seconds % 60:00}";
 	}
 
 	public override void _ExitTree()
@@ -99,6 +114,11 @@ public partial class GameFlow : Node
 		{
 			LobbyManager.Instance.GameStarted -= OnGameStarted;
 			LobbyManager.Instance.JoinRejectedGameInProgress -= OnJoinRejected;
+		}
+
+		if (RoundManager.Instance != null)
+		{
+			RoundManager.Instance.RoundEnded -= OnRoundEnded;
 		}
 	}
 
@@ -151,8 +171,21 @@ public partial class GameFlow : Node
 	{
 		GameState.SetPhase(GamePhase.Gameplay);
 		ApplyRoles();
+		RoundManager.Instance.StartRound();
 		_ui.ShowTip(true);
 		Input.MouseMode = Input.MouseModeEnum.Captured;
+	}
+
+	private void OnRoundEnded(RoundResult result)
+	{
+		GameState.SetPhase(GamePhase.RoundOver);
+		_ui.ShowRoundResult(result == RoundResult.PrisonersWin
+			? "Заключённые сбежали!"
+			: "Надзиратель победил!");
+		_ui.ShowTip(false);
+		_ui.SetInteractPrompt(string.Empty);
+		_ui.SetTimer(string.Empty);
+		Input.MouseMode = Input.MouseModeEnum.Visible;
 	}
 
 	// Раздаёт роли всем игрокам на этом пире: меняет модель у каждого, а своего
@@ -160,14 +193,9 @@ public partial class GameFlow : Node
 	// authority — MultiplayerSynchronizer разошлёт её остальным.
 	private void ApplyRoles()
 	{
-		foreach (PlayerController player in PlayerController.AllPlayers.Values)
-		{
-			if (LobbyManager.Instance.Players.TryGetValue(player.PlayerId, out var info))
-			{
-				player.ApplyRole(info.Role);
-			}
-		}
-
+		// Модели ролей игроки применяют сами (PlayerController.RefreshRoleModel).
+		// Здесь только ставим локального игрока на точку спавна его роли и
+		// показываем подсказку.
 		PlayerController local = PlayerController.LocalPlayer;
 		if (local == null
 			|| !LobbyManager.Instance.Players.TryGetValue(local.PlayerId, out var localInfo))
@@ -219,12 +247,14 @@ public partial class GameFlow : Node
 	{
 		NetworkManager.Instance.Disconnect();
 		LobbyManager.Instance.Reset();
+		RoundManager.Instance.Reset();
 
 		_pendingStatus = status;
 		_inventoryBound = false;
 		GameState.SetPhase(GamePhase.MainMenu);
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 		_ui.ShowTip(false);
+		_ui.SetTimer(string.Empty);
 
 		GetTree().CallDeferred(SceneTree.MethodName.ReloadCurrentScene);
 	}

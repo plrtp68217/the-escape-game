@@ -39,8 +39,9 @@ public partial class PlayerController : CharacterBody3D
 	public static PlayerController LocalPlayer { get; private set; }
 	public static readonly Dictionary<long, PlayerController> AllPlayers = new();
 
-	// Роль в текущем раунде. Назначается в GameFlow при старте игры.
+	// Роль в текущем раунде. Выводится из ростера LobbyManager (см. RefreshRoleModel).
 	public PlayerRole Role { get; private set; } = PlayerRole.Prisoner;
+	private bool _roleModelApplied;
 
 	public Inv.PlayerInventory Inventory { get; private set; }
 	public event System.Action InventoryChanged;
@@ -54,6 +55,25 @@ public partial class PlayerController : CharacterBody3D
 	private Marker3D _hand;
 	private CameraEffects _cameraEffects;
 
+	public override void _EnterTree()
+	{
+		// Идентичность игрока берём из ИМЕНИ узла: его задаёт NetworkManager
+		// (Name = id пира) и детерминированно реплицирует спавнер, поэтому имя
+		// одинаково на всех пирах уже здесь. Синхронизируемый [Export] PlayerId
+		// для этого не годится — он приходит позже и несогласованно.
+		//
+		// Authority у MultiplayerSynchronizer движок разрешает менять ТОЛЬКО в
+		// _EnterTree. Если делать это позже (в _Ready или отложенно), спавн
+		// отклоняется ("no network ID") и синхронизация позиции игнорируется —
+		// именно из-за этого игроки расходились по позициям и моделям на разных
+		// пирах.
+		if (int.TryParse(Name.ToString(), out int id))
+		{
+			PlayerId = id;
+			SetMultiplayerAuthority(id);
+		}
+	}
+
 	public override void _Ready()
 	{
 		_pivot = GetNode<Node3D>("Pivot");
@@ -62,30 +82,15 @@ public partial class PlayerController : CharacterBody3D
 		_cameraEffects = new CameraEffects(_camera);
 
 		Inventory = new Inv.PlayerInventory(4, 4);
+
+		// PlayerId и authority уже выставлены в _EnterTree, поэтому здесь всё
+		// корректно: ключ AllPlayers, роль по ростеру и IsMultiplayerAuthority().
 		AllPlayers[PlayerId] = this;
 
-		// Нельзя менять multiplayer authority прямо в _Ready() — движок в этот
-		// момент ещё не закончил синхронизацию заспавненного узла (MultiplayerSynchronizer
-		// ещё обрабатывает "pending spawn"), и SetMultiplayerAuthority здесь падает
-		// с ошибкой "no network ID". Поэтому откладываем через CallDeferred —
-		// вызов выполнится, когда спавн полностью завершится и PlayerId уже
-		// будет корректно реплицирован на этот пир.
-		CallDeferred(nameof(ApplyAuthority));
-	}
-
-	public override void _ExitTree()
-	{
-		AllPlayers.Remove(PlayerId);
-
-		if (LocalPlayer == this)
-		{
-			LocalPlayer = null;
-		}
-	}
-
-	private void ApplyAuthority()
-	{
-		SetMultiplayerAuthority(PlayerId);
+		// Модель роли игрок применяет сам — при спавне и при каждом обновлении
+		// ростера, поэтому она верна независимо от порядка спавна и синка ролей.
+		LobbyManager.Instance.LobbyUpdated += RefreshRoleModel;
+		RefreshRoleModel();
 
 		_camera.Current = IsMultiplayerAuthority();
 
@@ -105,13 +110,41 @@ public partial class PlayerController : CharacterBody3D
 		}
 	}
 
-	// Применяет роль игрока: запоминает её и меняет видимую модель.
-	// Вызывается на каждом пире для каждого игрока (роль берётся из
-	// синхронизированного ростера LobbyManager), поэтому не привязано к authority.
-	public void ApplyRole(PlayerRole role)
+	public override void _ExitTree()
 	{
-		Role = role;
-		SwapModel(role == PlayerRole.Warden ? R.Characters.Sanitar : R.Characters.Prisoner);
+		AllPlayers.Remove(PlayerId);
+
+		if (LobbyManager.Instance != null)
+		{
+			LobbyManager.Instance.LobbyUpdated -= RefreshRoleModel;
+		}
+
+		if (LocalPlayer == this)
+		{
+			LocalPlayer = null;
+		}
+	}
+
+	// Определяет свою роль из синхронизированного ростера LobbyManager и
+	// применяет модель. Идемпотентно и не привязано к authority: вызывается
+	// при спавне и на каждом LobbyUpdated, поэтому модель корректна на всех
+	// пирах независимо от порядка спавна игроков и синхронизации ролей.
+	public void RefreshRoleModel()
+	{
+		if (LobbyManager.Instance == null
+			|| !LobbyManager.Instance.Players.TryGetValue(PlayerId, out LobbyPlayerInfo info))
+		{
+			return;
+		}
+
+		if (_roleModelApplied && info.Role == Role)
+		{
+			return;
+		}
+
+		Role = info.Role;
+		_roleModelApplied = true;
+		SwapModel(info.Role == PlayerRole.Warden ? R.Characters.Sanitar : R.Characters.Prisoner);
 	}
 
 	private void SwapModel(string modelPath)

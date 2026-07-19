@@ -81,6 +81,13 @@ public static class G
         public const int MinPlayersToStart = 1;
     }
 
+    // Раунд
+    public static class Round
+    {
+        // Сколько секунд у заключённых на побег, прежде чем побеждает надзиратель.
+        public const int Duration = 180;
+    }
+
     // Двери камер
     public static class Door
     {

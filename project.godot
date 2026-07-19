@@ -21,6 +21,7 @@ NetworkManager="*uid://bmqb6f38q05p7"
 LobbyManager="*res://src/LobbyManager.cs"
 InventoryRelay="*res://src/Inventory/InventoryRelay.cs"
 InteractionRelay="*res://src/Interaction/InteractionRelay.cs"
+RoundManager="*res://src/RoundManager.cs"
 
 [display]
 

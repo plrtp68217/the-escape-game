@@ -131,7 +131,7 @@ public partial class NetworkManager : Node
 
 		player.Name = id.ToString();
 		player.Position = G.SpawnPosition;
-		player.PlayerId = id; // назначит multiplayer authority (см. Player.cs)
+		player.PlayerId = id; // authority выводится из Name в _EnterTree (см. PlayerController)
 
 		var playersNode = GetTree().Root.GetNode(PlayersContainerPath);
 		playersNode.AddChild(player, true);

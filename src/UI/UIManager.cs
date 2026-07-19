@@ -16,8 +16,10 @@ public partial class UIManager : Node
     private PauseMenu _pauseMenu;
     private Scoreboard _scoreboard;
     private InventoryUI _inventory;
+    private RoundOverMenu _roundOverMenu;
     private Label _tipLabel;
     private Label _promptLabel;
+    private Label _timerLabel;
 
     public event System.Action HostRequested;
     public event System.Action<string> JoinRequested;
@@ -41,6 +43,8 @@ public partial class UIManager : Node
         _lobbyMenu.StartRequested += () => StartRequested?.Invoke();
 
         _pauseMenu.LeaveRequested += () => LeaveRequested?.Invoke();
+
+        _roundOverMenu.LeaveRequested += () => LeaveRequested?.Invoke();
 
         _inventory = _screenManager.GetNode<InventoryUI>("Inventory");
         _inventory.SlotSelected += index => InventorySlotSelected?.Invoke(index);
@@ -66,6 +70,11 @@ public partial class UIManager : Node
         if (_pauseMenu != null)
         {
             _pauseMenu.LeaveRequested -= () => LeaveRequested?.Invoke();
+        }
+
+        if (_roundOverMenu != null)
+        {
+            _roundOverMenu.LeaveRequested -= () => LeaveRequested?.Invoke();
         }
 
         if (_inventory != null)
@@ -94,6 +103,16 @@ public partial class UIManager : Node
         _promptLabel.Text = text;
     }
 
+    public void SetTimer(string text)
+    {
+        _timerLabel.Text = text;
+    }
+
+    public void ShowRoundResult(string text)
+    {
+        _roundOverMenu.SetResult(text);
+    }
+
     private void InstantiateUI()
     {
         var scene = GD.Load<PackedScene>(UIRootScenePath);
@@ -105,7 +124,9 @@ public partial class UIManager : Node
         _lobbyMenu = _screenManager.GetNode<LobbyMenu>("LobbyMenu");
         _pauseMenu = _screenManager.GetNode<PauseMenu>("PauseMenu");
         _scoreboard = _screenManager.GetNode<Scoreboard>("Scoreboard");
+        _roundOverMenu = _screenManager.GetNode<RoundOverMenu>("RoundOverMenu");
         _tipLabel = _screenManager.GetNode<Label>("TipLabel");
         _promptLabel = _screenManager.GetNode<Label>("InteractPrompt");
+        _timerLabel = _screenManager.GetNode<Label>("TimerLabel");
     }
 }

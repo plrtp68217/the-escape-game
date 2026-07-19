@@ -23,7 +23,8 @@ public partial class WorldItem : Area3D, IInteractable
 
     private void OnBodyEntered(Node3D body)
     {
-        if (body is PlayerController player && player.IsMultiplayerAuthority())
+        if (Multiplayer.MultiplayerPeer != null
+            && body is PlayerController player && player.IsMultiplayerAuthority())
         {
             player.RegisterInteractable(this);
         }
@@ -31,7 +32,8 @@ public partial class WorldItem : Area3D, IInteractable
 
     private void OnBodyExited(Node3D body)
     {
-        if (body is PlayerController player && player.IsMultiplayerAuthority())
+        if (Multiplayer.MultiplayerPeer != null
+            && body is PlayerController player && player.IsMultiplayerAuthority())
         {
             player.UnregisterInteractable(this);
         }

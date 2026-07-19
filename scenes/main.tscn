@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/door.tscn" id="4_door"]
 [ext_resource type="Script" path="res://src/Inventory/WorldItem.cs" id="5_wi"]
 [ext_resource type="PackedScene" path="res://scenes/items/key.tscn" id="6_key"]
+[ext_resource type="Script" path="res://src/ExitZone.cs" id="7_exit"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_wjy38"]
 size = Vector3(60, 2, 60)
@@ -16,6 +17,16 @@ size = Vector3(60, 2, 60)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_keypick"]
 size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
+size = Vector3(4, 3, 4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_exit"]
+size = Vector3(4, 3, 4)
+
+[sub_resource type="StandardMaterial3D" id="mat_exit"]
+transparency = 1
+albedo_color = Color(0.2, 0.9, 0.3, 0.25)
 
 [node name="Main" type="Node3D" unique_id=300460222]
 script = ExtResource("1_0wfyh")
@@ -67,3 +78,18 @@ ItemId = "key"
 shape = SubResource("BoxShape3D_keypick")
 
 [node name="Model" parent="KeyPickup" instance=ExtResource("6_key")]
+
+[node name="ExitZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1.5, -6)
+script = ExtResource("7_exit")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone"]
+shape = SubResource("BoxShape3D_exit")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone"]
+mesh = SubResource("BoxMesh_exit")
+material_override = SubResource("mat_exit")
+
+[node name="Label3D" type="Label3D" parent="ExitZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+text = "ВЫХОД"
