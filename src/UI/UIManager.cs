@@ -20,6 +20,7 @@ public partial class UIManager : Node
     private Label _tipLabel;
     private Label _promptLabel;
     private Label _timerLabel;
+    private Label _healthLabel;
 
     public event System.Action HostRequested;
     public event System.Action<string> JoinRequested;
@@ -108,6 +109,11 @@ public partial class UIManager : Node
         _timerLabel.Text = text;
     }
 
+    public void SetHealth(string text)
+    {
+        _healthLabel.Text = text;
+    }
+
     public void ShowRoundResult(string text)
     {
         _roundOverMenu.SetResult(text);
@@ -128,5 +134,6 @@ public partial class UIManager : Node
         _tipLabel = _screenManager.GetNode<Label>("TipLabel");
         _promptLabel = _screenManager.GetNode<Label>("InteractPrompt");
         _timerLabel = _screenManager.GetNode<Label>("TimerLabel");
+        _healthLabel = _screenManager.GetNode<Label>("HealthLabel");
     }
 }

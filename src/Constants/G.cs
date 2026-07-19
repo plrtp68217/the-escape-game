@@ -50,10 +50,10 @@ public static class G
     // Spawn
     public static readonly Vector3 SpawnPosition = new(0, 1, 0);
 
-    // Точки спавна по ролям (применяются при старте раунда). Пока карта —
-    // плоскость, поэтому позиции временные, лишь бы стороны были разнесены.
-    public static readonly Vector3 WardenSpawn = new(0, 1, 8);
-    public static readonly Vector3 PrisonerSpawn = new(0, 1, -6);
+    // Точки спавна по ролям (применяются при старте раунда). Заключённые —
+    // внутри камеры (запертой), надзиратель — в коридоре у выхода.
+    public static readonly Vector3 WardenSpawn = new(6, 1, 0);
+    public static readonly Vector3 PrisonerSpawn = new(-8, 1, 0);
 
     // Расстояние между заключёнными, чтобы они не спавнились друг в друге.
     public const float PrisonerSpawnSpacing = 2f;
@@ -86,6 +86,23 @@ public static class G
     {
         // Сколько секунд у заключённых на побег, прежде чем побеждает надзиратель.
         public const int Duration = 180;
+    }
+
+    // Здоровье и бой
+    public static class Combat
+    {
+        public const int MaxHealth = 100;
+
+        // Урон от удара топором. 3 удара — заключённый повержен.
+        public const int AxeDamage = 34;
+        public const float AttackRange = 3f;
+
+        // Лечение расходником (аптечка/шприц) и здоровье после подъёма.
+        public const int HealAmount = 40;
+        public const int ReviveHealth = 50;
+
+        // Дистанция, с которой можно поднять поверженного союзника.
+        public const float ReviveRange = 2.5f;
     }
 
     // Двери камер

@@ -74,13 +74,21 @@ public partial class GameFlow : Node
 			_inventoryBound = true;
 		}
 
-		// Подсказка взаимодействия и таймер показываются только в самой игре.
+		// Подсказка, таймер и здоровье показываются только в самой игре.
 		bool inGameplay = GameState.CurrentPhase == GamePhase.Gameplay;
 		_ui.SetInteractPrompt(inGameplay ? local.GetInteractPrompt() : string.Empty);
 		_ui.SetTimer(
 			inGameplay && RoundManager.Instance.RoundActive
 				? FormatTime(RoundManager.Instance.RemainingSeconds)
 				: string.Empty);
+		_ui.SetHealth(inGameplay ? FormatHealth(local) : string.Empty);
+	}
+
+	private static string FormatHealth(PlayerController player)
+	{
+		return player.VitalState == PlayerVitalState.Downed
+			? "ПОВЕРЖЕН"
+			: $"HP: {player.Health}";
 	}
 
 	private static string FormatTime(int seconds)
@@ -172,6 +180,7 @@ public partial class GameFlow : Node
 		GameState.SetPhase(GamePhase.Gameplay);
 		ApplyRoles();
 		RoundManager.Instance.StartRound();
+		Combat.CombatRelay.Instance.ResetAll();
 		_ui.ShowTip(true);
 		Input.MouseMode = Input.MouseModeEnum.Captured;
 	}
@@ -185,6 +194,7 @@ public partial class GameFlow : Node
 		_ui.ShowTip(false);
 		_ui.SetInteractPrompt(string.Empty);
 		_ui.SetTimer(string.Empty);
+		_ui.SetHealth(string.Empty);
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 	}
 
@@ -255,6 +265,7 @@ public partial class GameFlow : Node
 		Input.MouseMode = Input.MouseModeEnum.Visible;
 		_ui.ShowTip(false);
 		_ui.SetTimer(string.Empty);
+		_ui.SetHealth(string.Empty);
 
 		GetTree().CallDeferred(SceneTree.MethodName.ReloadCurrentScene);
 	}

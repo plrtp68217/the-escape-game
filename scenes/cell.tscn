@@ -1,0 +1,76 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/door.tscn" id="1_door"]
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.5, 0.5, 0.55, 1)
+
+[sub_resource type="BoxShape3D" id="shape_back"]
+size = Vector3(0.3, 4, 6.3)
+
+[sub_resource type="BoxMesh" id="mesh_back"]
+size = Vector3(0.3, 4, 6.3)
+
+[sub_resource type="BoxShape3D" id="shape_ns"]
+size = Vector3(8, 4, 0.3)
+
+[sub_resource type="BoxMesh" id="mesh_ns"]
+size = Vector3(8, 4, 0.3)
+
+[sub_resource type="BoxShape3D" id="shape_stub"]
+size = Vector3(0.3, 4, 2.2)
+
+[sub_resource type="BoxMesh" id="mesh_stub"]
+size = Vector3(0.3, 4, 2.2)
+
+[node name="Cell" type="Node3D"]
+
+[node name="Walls" type="StaticBody3D" parent="."]
+
+[node name="BackColl" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 0)
+shape = SubResource("shape_back")
+
+[node name="BackMesh" type="MeshInstance3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 0)
+mesh = SubResource("mesh_back")
+material_override = SubResource("mat_wall")
+
+[node name="NorthColl" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -3)
+shape = SubResource("shape_ns")
+
+[node name="NorthMesh" type="MeshInstance3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -3)
+mesh = SubResource("mesh_ns")
+material_override = SubResource("mat_wall")
+
+[node name="SouthColl" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 3)
+shape = SubResource("shape_ns")
+
+[node name="SouthMesh" type="MeshInstance3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 3)
+mesh = SubResource("mesh_ns")
+material_override = SubResource("mat_wall")
+
+[node name="EastNorthColl" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, -1.9)
+shape = SubResource("shape_stub")
+
+[node name="EastNorthMesh" type="MeshInstance3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, -1.9)
+mesh = SubResource("mesh_stub")
+material_override = SubResource("mat_wall")
+
+[node name="EastSouthColl" type="CollisionShape3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 1.9)
+shape = SubResource("shape_stub")
+
+[node name="EastSouthMesh" type="MeshInstance3D" parent="Walls"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 1.9)
+mesh = SubResource("mesh_stub")
+material_override = SubResource("mat_wall")
+
+[node name="CellDoor" parent="." instance=ExtResource("1_door")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 4, 1.5, 0)

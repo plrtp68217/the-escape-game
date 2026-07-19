@@ -81,6 +81,25 @@ public partial class RoundManager : Node
         }
     }
 
+    // Сервер: заключённого повергли. Если все не сбежавшие заключённые
+    // повержены — побеждает надзиратель.
+    public void OnPrisonerDowned()
+    {
+        if (!Multiplayer.IsServer() || !RoundActive)
+        {
+            return;
+        }
+
+        var active = PlayerController.AllPlayers.Values
+            .Where(p => p.Role == PlayerRole.Prisoner && !_escaped.Contains(p.PlayerId))
+            .ToList();
+
+        if (active.Count > 0 && active.All(p => p.VitalState == PlayerVitalState.Downed))
+        {
+            EndRound(RoundResult.WardenWin);
+        }
+    }
+
     private void EndRound(RoundResult result)
     {
         if (!RoundActive)

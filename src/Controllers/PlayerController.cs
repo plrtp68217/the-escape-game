@@ -43,12 +43,19 @@ public partial class PlayerController : CharacterBody3D
 	public PlayerRole Role { get; private set; } = PlayerRole.Prisoner;
 	private bool _roleModelApplied;
 
+	// Здоровье и жизненное состояние — авторитет сервера, приходят через CombatRelay.
+	public int Health { get; private set; } = G.Combat.MaxHealth;
+	public PlayerVitalState VitalState { get; private set; } = PlayerVitalState.Alive;
+
 	public Inv.PlayerInventory Inventory { get; private set; }
 	public event System.Action InventoryChanged;
+	private Node3D _model;
+	private Label3D _nameTag;
 
 	public List<Interaction.IInteractable> NearbyInteractables { get; } = new();
 
 	private Interaction.IInteractable _targetInteractable;
+	private bool _attackQueued;
 	private Vector3 _targetVelocity = Vector3.Zero;
 	private Node3D _pivot;
 	private Camera3D _camera;
@@ -79,6 +86,8 @@ public partial class PlayerController : CharacterBody3D
 		_pivot = GetNode<Node3D>("Pivot");
 		_camera = GetNode<Camera3D>("Pivot/Camera3D");
 		_hand = GetNode<Marker3D>("Pivot/Hand");
+		_model = GetNode<Node3D>("Model");
+		_nameTag = GetNodeOrNull<Label3D>("NameTag");
 		_cameraEffects = new CameraEffects(_camera);
 
 		Inventory = new Inv.PlayerInventory(4, 4);
@@ -137,6 +146,11 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
+		if (_nameTag != null)
+		{
+			_nameTag.Text = info.Name;
+		}
+
 		if (_roleModelApplied && info.Role == Role)
 		{
 			return;
@@ -171,6 +185,21 @@ public partial class PlayerController : CharacterBody3D
 		// Разворот на 180° вокруг Y — модель смотрит вперёд (как AuxScene в player.tscn).
 		instance.Transform = new Transform3D(new Basis(Vector3.Up, Mathf.Pi), Vector3.Zero);
 		modelRoot.AddChild(instance);
+	}
+
+	// Применяет здоровье и состояние (приходит от CombatRelay на всех пирах).
+	public void ApplyVitals(int health, PlayerVitalState state)
+	{
+		Health = health;
+		VitalState = state;
+
+		// Поверженного наклоняем — грубый визуальный маркер (без анимации).
+		if (_model != null)
+		{
+			_model.Rotation = state == PlayerVitalState.Downed
+				? new Vector3(Mathf.DegToRad(80f), 0f, 0f)
+				: Vector3.Zero;
+		}
 	}
 
 	public void UpdateInventory(string[] itemIds, int[] counts, int equippedIndex)
@@ -260,15 +289,72 @@ public partial class PlayerController : CharacterBody3D
 
 	public void RequestInteract()
 	{
-		if (_targetInteractable is not Node node
-			|| !GodotObject.IsInstanceValid(node)
-			|| !IsMultiplayerAuthority())
+		if (!IsMultiplayerAuthority())
 		{
 			return;
 		}
 
-		Interaction.InteractionRelay.Instance?.RpcId(1, nameof(Interaction.InteractionRelay.RequestInteract),
-			(long)PlayerId, node.GetPath().ToString());
+		if (_targetInteractable is Node node && GodotObject.IsInstanceValid(node))
+		{
+			Interaction.InteractionRelay.Instance?.RpcId(1, nameof(Interaction.InteractionRelay.RequestInteract),
+				(long)PlayerId, node.GetPath().ToString());
+			return;
+		}
+
+		// Нет объекта под рукой — заключённый пробует поднять поверженного
+		// союзника рядом (сервер сам найдёт цель и проверит наличие медикамента).
+		if (Role == PlayerRole.Prisoner)
+		{
+			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestRevive), (long)PlayerId);
+		}
+	}
+
+	// Надзиратель бьёт топором: луч из камеры, ближайшего заключённого — на сервер.
+	private void TryAttack()
+	{
+		if (!IsMultiplayerAuthority()
+			|| Role != PlayerRole.Warden
+			|| VitalState != PlayerVitalState.Alive
+			|| Inventory.EquippedSlot?.Item?.Id != G.Door.AxeItemId)
+		{
+			return;
+		}
+
+		Vector3 from = _camera.GlobalPosition;
+		Vector3 to = from + (-_camera.GlobalTransform.Basis.Z) * G.Combat.AttackRange;
+
+		var query = PhysicsRayQueryParameters3D.Create(from, to);
+		query.Exclude = new Godot.Collections.Array<Rid> { GetRid() };
+
+		Godot.Collections.Dictionary hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+		if (hit.Count == 0)
+		{
+			return;
+		}
+
+		if (hit["collider"].As<Node>() is PlayerController target && target.Role == PlayerRole.Prisoner)
+		{
+			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestAttack),
+				(long)PlayerId, (long)target.PlayerId);
+		}
+	}
+
+	// Использовать экипированный расходник (аптечку/шприц) на себе.
+	private void TryUseEquipped()
+	{
+		if (!IsMultiplayerAuthority() || VitalState != PlayerVitalState.Alive)
+		{
+			return;
+		}
+
+		Inv.InventorySlot slot = Inventory.EquippedSlot;
+		if (slot == null || slot.IsEmpty)
+		{
+			return;
+		}
+
+		Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestUseItem),
+			(long)PlayerId, Inventory.EquippedSlotIndex);
 	}
 
 	public void RefreshEquippedModel()
@@ -393,9 +479,28 @@ public partial class PlayerController : CharacterBody3D
 			_pivot.Rotation = pivotRotation;
 		}
 
+		// Действия недоступны поверженному игроку (осмотреться мышью — можно).
+		if (VitalState != PlayerVitalState.Alive)
+		{
+			return;
+		}
+
 		if (@event.IsActionPressed("interact"))
 		{
 			RequestInteract();
+		}
+
+		// Удар — только при захваченной мыши, чтобы клик по инвентарю не бил.
+		// Сам луч выполняется в _PhysicsProcess (безопасно для physics space).
+		if (@event.IsActionPressed("attack")
+			&& Input.GetMouseMode() == Input.MouseModeEnum.Captured)
+		{
+			_attackQueued = true;
+		}
+
+		if (@event.IsActionPressed("use"))
+		{
+			TryUseEquipped();
 		}
 	}
 
@@ -419,6 +524,12 @@ public partial class PlayerController : CharacterBody3D
 			return;
 		}
 
+		// Поверженный игрок не двигается — ждёт подъёма.
+		if (VitalState != PlayerVitalState.Alive)
+		{
+			return;
+		}
+
 		Vector3 input = ReadMovementInput();
 		ApplyHorizontalMovement(input, (float)delta);
 		ApplyJump();
@@ -428,6 +539,14 @@ public partial class PlayerController : CharacterBody3D
 		MoveAndSlide();
 
 		_cameraEffects?.Update(_targetVelocity, IsOnFloor(), Speed, (float)delta);
+
+		// Луч атаки выполняем здесь (в физическом шаге), а не в _Input — так
+		// запрос к physics space безопасен по времени.
+		if (_attackQueued)
+		{
+			_attackQueued = false;
+			TryAttack();
+		}
 	}
 
 	private Vector3 ReadMovementInput()
