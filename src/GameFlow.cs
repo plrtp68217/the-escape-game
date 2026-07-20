@@ -28,6 +28,7 @@ public partial class GameFlow : Node
 	{
 		_ui = ui;
 		Inventory.ItemDatabase.RegisterDefaults();
+		Settings.Load();
 
 		_ui.HostRequested += StartHost;
 		_ui.JoinRequested += JoinServer;
@@ -406,6 +407,13 @@ public partial class GameFlow : Node
 	public override void _Input(InputEvent @event)
 	{
 		if (@event is not InputEventKey keyEvent || !keyEvent.Pressed || keyEvent.Echo)
+		{
+			return;
+		}
+
+		// Пока открыт экран настроек, он сам обрабатывает клавиши (в т.ч. ESC и
+		// перехват для ребинда) — не даём ESC/E менять фазу игры.
+		if (UI.SettingsMenu.IsOpen)
 		{
 			return;
 		}

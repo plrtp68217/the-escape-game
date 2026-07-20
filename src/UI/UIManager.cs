@@ -18,6 +18,7 @@ public partial class UIManager : Node
     private InventoryUI _inventory;
     private HotbarUI _hotbar;
     private RoundOverMenu _roundOverMenu;
+    private SettingsMenu _settingsMenu;
     private HudEffects _hudEffects;
     private Label _tipLabel;
     private Label _promptLabel;
@@ -45,6 +46,9 @@ public partial class UIManager : Node
 
         _mainMenu.HostRequested += () => HostRequested?.Invoke();
         _mainMenu.JoinRequested += address => JoinRequested?.Invoke(address);
+        _mainMenu.SettingsRequested += () => _settingsMenu.Open();
+
+        _pauseMenu.SettingsRequested += () => _settingsMenu.Open();
 
         _lobbyMenu.LeaveRequested += () => LeaveRequested?.Invoke();
         _lobbyMenu.ReadyToggled += ready => ReadyToggled?.Invoke(ready);
@@ -177,6 +181,7 @@ public partial class UIManager : Node
         _pauseMenu = _screenManager.GetNode<PauseMenu>("PauseMenu");
         _scoreboard = _screenManager.GetNode<Scoreboard>("Scoreboard");
         _roundOverMenu = _screenManager.GetNode<RoundOverMenu>("RoundOverMenu");
+        _settingsMenu = _screenManager.GetNode<SettingsMenu>("SettingsMenu");
         _hudEffects = _screenManager.GetNode<HudEffects>("HudEffects");
         _tipLabel = _screenManager.GetNode<Label>("TipLabel");
         _promptLabel = _screenManager.GetNode<Label>("InteractPrompt");

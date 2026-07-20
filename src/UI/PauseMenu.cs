@@ -8,6 +8,7 @@ namespace EscapeGame.UI;
 public partial class PauseMenu : Control
 {
     public event System.Action LeaveRequested;
+    public event System.Action SettingsRequested;
 
     public override void _Ready()
     {
@@ -15,6 +16,7 @@ public partial class PauseMenu : Control
         OnPhaseChanged();
 
         GetNode<Button>("LeaveButton").Pressed += () => LeaveRequested?.Invoke();
+        GetNode<Button>("SettingsButton").Pressed += () => SettingsRequested?.Invoke();
     }
 
     public override void _ExitTree()

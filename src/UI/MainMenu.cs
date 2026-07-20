@@ -13,6 +13,7 @@ public partial class MainMenu : Control
 
 	public event System.Action HostRequested;
 	public event System.Action<string> JoinRequested;
+	public event System.Action SettingsRequested;
 
 	public string PlayerName
 	{
@@ -40,6 +41,7 @@ public partial class MainMenu : Control
 
 		GetNode<Button>("VBoxContainer/HostButton").Pressed += () => HostRequested?.Invoke();
 		GetNode<Button>("VBoxContainer/JoinButton").Pressed += () => JoinRequested?.Invoke(Address);
+		GetNode<Button>("VBoxContainer/SettingsButton").Pressed += () => SettingsRequested?.Invoke();
 	}
 
 	public void SetStatus(string text)

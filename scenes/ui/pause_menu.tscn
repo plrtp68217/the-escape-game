@@ -37,7 +37,7 @@ grow_vertical = 2
 text = "[PAUSE]"
 horizontal_alignment = 1
 
-[node name="LeaveButton" type="Button" parent="."]
+[node name="SettingsButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -50,38 +50,19 @@ offset_right = 80.0
 offset_bottom = 61.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "Выйти в меню"
+text = "Настройки"
 
-[node name="ControlsPanel" type="PanelContainer" parent="."]
+[node name="LeaveButton" type="Button" parent="."]
+layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -190.0
-offset_top = 90.0
-offset_right = 190.0
-offset_bottom = 300.0
+offset_left = -80.0
+offset_top = 66.0
+offset_right = 80.0
+offset_bottom = 97.0
 grow_horizontal = 2
 grow_vertical = 2
-
-[node name="Margin" type="MarginContainer" parent="ControlsPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 12
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 12
-theme_override_constants/margin_bottom = 10
-
-[node name="ControlsLabel" type="Label" parent="ControlsPanel/Margin"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Управление:
-[F] — взаимодействовать / подобрать
-[ЛКМ] — удар топором
-[ЛКМ] удерживать (с лекарством) — лечиться
-[G] — выбросить предмет из рук
-[ПКМ по ячейке] — выбросить из инвентаря
-[E] — инвентарь
-[Колесо мыши] — сменить предмет
-[F] рядом с союзником — поднять
-[ESC] — пауза"
+text = "Выйти в меню"

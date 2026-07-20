@@ -52,6 +52,10 @@ text = "Создать игру (Host)"
 layout_mode = 2
 text = "Подключиться (Join)"
 
+[node name="SettingsButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Настройки"
+
 [node name="StatusLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 horizontal_alignment = 1

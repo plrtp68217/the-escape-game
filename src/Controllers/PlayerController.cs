@@ -725,9 +725,10 @@ public partial class PlayerController : CharacterBody3D
 			&& Input.GetMouseMode() == Input.MouseModeEnum.Captured
 		)
 		{
-			RotateY(-mouseEvent.Relative.X * MouseSensitivity);
+			float sensitivity = Settings.MouseSensitivity;
+			RotateY(-mouseEvent.Relative.X * sensitivity);
 
-			_pivot.RotateX(-mouseEvent.Relative.Y * MouseSensitivity);
+			_pivot.RotateX(-mouseEvent.Relative.Y * sensitivity);
 
 			Vector3 pivotRotation = _pivot.Rotation;
 			pivotRotation.X = Mathf.Clamp(
