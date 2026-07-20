@@ -108,9 +108,9 @@ public static class G
 
         // Обучающие подсказки с управлением в начале раунда.
         public const string WardenHint =
-            "Ты — Надзиратель. Не дай сбежать: ЛКМ — удар топором, [F] — запереть дверь. Держи заключённых!";
+            "Ты — Надзиратель. ЛКМ — топор, [F] — дверь, [R] — скан заключённых, [Shift] — бег. Не дай сбежать!";
         public const string PrisonerHint =
-            "Ты — Заключённый. Сбеги: [F] — действие, ЛКМ — выбить дверь топором, [E] — инвентарь. Дойди до выхода!";
+            "Ты — Заключённый. [F] — действие, ЛКМ — дверь/барьер, [E] — инвентарь, [Shift] — бег, [C] — присесть (прячет от скана). К выходу!";
     }
 
     // Lobby
@@ -180,6 +180,26 @@ public static class G
 
         public const string KeyItemId = "key";
         public const string AxeItemId = "axe";
+    }
+
+    // Способности сторон (Веха 8): спринт/выносливость, присед, скан надзирателя.
+    public static class Abilities
+    {
+        // Спринт (доступен всем): множитель скорости и трата выносливости.
+        public const float SprintMultiplier = 1.6f;
+        public const float StaminaMax = 100f;
+        public const float StaminaDrainPerSec = 35f;  // при спринте
+        public const float StaminaRegenPerSec = 22f;  // при восстановлении
+        public const float StaminaRegenDelay = 1.0f;  // пауза перед реген после спринта
+        public const float SprintMinStamina = 8f;      // минимум, чтобы начать спринт
+
+        // Присед (заключённые): множитель скорости, опускание камеры, скрытность.
+        public const float CrouchMultiplier = 0.45f;
+        public const float CrouchCameraDrop = 0.5f;
+
+        // Скан надзирателя: кулдаун и длительность подсветки заключённых.
+        public const float ScanCooldown = 18f;
+        public const float ScanRevealDuration = 5f;
     }
 
     // Инструменты для барьеров (Веха 7). Id совпадают с ItemDatabase.

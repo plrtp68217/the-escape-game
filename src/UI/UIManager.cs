@@ -23,6 +23,8 @@ public partial class UIManager : Node
     private Label _promptLabel;
     private Label _timerLabel;
     private Label _healthLabel;
+    private Label _staminaLabel;
+    private Label _abilityLabel;
 
     public event System.Action HostRequested;
     public event System.Action<string> JoinRequested;
@@ -129,6 +131,16 @@ public partial class UIManager : Node
         _healthLabel.Text = text;
     }
 
+    public void SetStamina(string text)
+    {
+        _staminaLabel.Text = text;
+    }
+
+    public void SetAbility(string text)
+    {
+        _abilityLabel.Text = text;
+    }
+
     public void ShowRoundResult(string text)
     {
         _roundOverMenu.SetResult(text);
@@ -170,5 +182,7 @@ public partial class UIManager : Node
         _promptLabel = _screenManager.GetNode<Label>("InteractPrompt");
         _timerLabel = _screenManager.GetNode<Label>("TimerLabel");
         _healthLabel = _screenManager.GetNode<Label>("HealthLabel");
+        _staminaLabel = _screenManager.GetNode<Label>("StaminaLabel");
+        _abilityLabel = _screenManager.GetNode<Label>("AbilityLabel");
     }
 }

@@ -47,6 +47,27 @@ public partial class PlayerController : CharacterBody3D
 	public int Health { get; private set; } = G.Combat.MaxHealth;
 	public PlayerVitalState VitalState { get; private set; } = PlayerVitalState.Alive;
 
+	// Способности (Веха 8). Crouching синхронизируется (см. player.tscn) — надзиратель
+	// по нему решает, показывать ли заключённого при скане.
+	[Export]
+	public bool Crouching { get; set; }
+
+	public float Stamina { get; private set; } = G.Abilities.StaminaMax;
+	private bool _sprinting;
+	private float _speedMultiplier = 1f;
+	private float _staminaRegenDelay;
+	private float _pivotBaseY;
+
+	// Скан надзирателя: кулдаун (0 = готов) и остаток подсветки.
+	private float _scanCooldownLeft;
+	private float _scanRevealLeft;
+	private readonly Dictionary<long, Label3D> _scanMarkers = new();
+
+	public float StaminaRatio => Stamina / G.Abilities.StaminaMax;
+	public bool ScanReady => _scanCooldownLeft <= 0f;
+	public bool ScanActive => _scanRevealLeft > 0f;
+	public int ScanCooldownSeconds => Mathf.CeilToInt(_scanCooldownLeft);
+
 	public Inv.PlayerInventory Inventory { get; private set; }
 	public event System.Action InventoryChanged;
 
@@ -116,6 +137,7 @@ public partial class PlayerController : CharacterBody3D
 	public override void _Ready()
 	{
 		_pivot = GetNode<Node3D>("Pivot");
+		_pivotBaseY = _pivot.Position.Y;
 		_camera = GetNode<Camera3D>("Pivot/Camera3D");
 		_hand = GetNode<Marker3D>("Pivot/Hand");
 		_handBaseRotation = _hand.Rotation;
@@ -180,6 +202,7 @@ public partial class PlayerController : CharacterBody3D
 
 	public override void _ExitTree()
 	{
+		ClearScanMarkers();
 		AllPlayers.Remove(PlayerId);
 
 		if (LobbyManager.Instance != null)
@@ -785,6 +808,7 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		Vector3 input = ReadMovementInput();
+		UpdateAbilities(input, (float)delta);
 		ApplyHorizontalMovement(input, (float)delta);
 		ApplyJump();
 		ApplyGravity((float)delta);
@@ -904,13 +928,168 @@ public partial class PlayerController : CharacterBody3D
 		return direction;
 	}
 
+	// Способности (Веха 8): присед, спринт с выносливостью, скан надзирателя.
+	// Вызывается только для живого локального игрока (см. _PhysicsProcess).
+	private void UpdateAbilities(Vector3 moveInput, float delta)
+	{
+		// Присед: медленнее и ниже; синхронизируется, чтобы скан видел стойку.
+		bool crouchHeld = Input.IsActionPressed("crouch");
+		if (crouchHeld != Crouching)
+		{
+			Crouching = crouchHeld;
+			ApplyCrouchPose();
+		}
+
+		// Спринт: нельзя присев, нужно двигаться и иметь выносливость.
+		_sprinting = Input.IsActionPressed("sprint")
+			&& !Crouching
+			&& moveInput.LengthSquared() > 0.01f
+			&& Stamina > 0f
+			&& (_sprinting || Stamina >= G.Abilities.SprintMinStamina);
+
+		if (_sprinting)
+		{
+			Stamina = Mathf.Max(0f, Stamina - G.Abilities.StaminaDrainPerSec * delta);
+			_staminaRegenDelay = G.Abilities.StaminaRegenDelay;
+		}
+		else if (_staminaRegenDelay > 0f)
+		{
+			_staminaRegenDelay -= delta;
+		}
+		else
+		{
+			Stamina = Mathf.Min(G.Abilities.StaminaMax, Stamina + G.Abilities.StaminaRegenPerSec * delta);
+		}
+
+		_speedMultiplier = Crouching
+			? G.Abilities.CrouchMultiplier
+			: _sprinting ? G.Abilities.SprintMultiplier : 1f;
+
+		// Скан: кулдаун тикает всегда; надзиратель активирует по R, когда готов.
+		if (_scanCooldownLeft > 0f)
+		{
+			_scanCooldownLeft -= delta;
+		}
+
+		if (Role == PlayerRole.Warden && ScanReady && Input.IsActionJustPressed("ability"))
+		{
+			_scanRevealLeft = G.Abilities.ScanRevealDuration;
+			_scanCooldownLeft = G.Abilities.ScanCooldown;
+		}
+
+		UpdateScanMarkers(delta);
+	}
+
+	private void ApplyCrouchPose()
+	{
+		if (_pivot == null)
+		{
+			return;
+		}
+
+		Vector3 p = _pivot.Position;
+		p.Y = _pivotBaseY - (Crouching ? G.Abilities.CrouchCameraDrop : 0f);
+		_pivot.Position = p;
+	}
+
+	// Подсветка заключённых сквозь стены на время скана. Маркеры создаёт только
+	// локальный надзиратель у себя — остальные их не видят. Присевшие и выбывшие
+	// пропадают из подсветки (проверяется каждый кадр — присед мгновенно прячет).
+	private void UpdateScanMarkers(float delta)
+	{
+		if (_scanRevealLeft <= 0f)
+		{
+			if (_scanMarkers.Count > 0)
+			{
+				ClearScanMarkers();
+			}
+			return;
+		}
+
+		_scanRevealLeft -= delta;
+
+		foreach (var kv in _scanMarkers)
+		{
+			kv.Value.Visible = false;
+		}
+
+		foreach (PlayerController p in AllPlayers.Values)
+		{
+			if (p.Role != PlayerRole.Prisoner
+				|| p.VitalState != PlayerVitalState.Alive
+				|| p.Crouching)
+			{
+				continue;
+			}
+
+			Label3D marker = GetOrCreateMarker(p.PlayerId);
+			marker.GlobalPosition = p.GlobalPosition + Vector3.Up * 2.8f;
+			marker.Visible = true;
+		}
+
+		if (_scanRevealLeft <= 0f)
+		{
+			ClearScanMarkers();
+		}
+	}
+
+	private Label3D GetOrCreateMarker(long id)
+	{
+		if (_scanMarkers.TryGetValue(id, out Label3D existing) && GodotObject.IsInstanceValid(existing))
+		{
+			return existing;
+		}
+
+		// Метка над головой в МИРОВЫХ координатах: билборд (лицом к камере) и без
+		// depth-теста (видна сквозь стены). БЕЗ FixedSize — иначе метка держит
+		// постоянный экранный размер и у ближнего игрока раздувается на весь экран.
+		var marker = new Label3D
+		{
+			Text = "[!]",
+			FontSize = 48,
+			PixelSize = 0.012f,
+			Modulate = new Color(1f, 0.25f, 0.25f),
+			Billboard = BaseMaterial3D.BillboardModeEnum.Enabled,
+			NoDepthTest = true,
+			RenderPriority = 10,
+		};
+		GetTree().CurrentScene.AddChild(marker);
+		_scanMarkers[id] = marker;
+		return marker;
+	}
+
+	private void ClearScanMarkers()
+	{
+		foreach (Label3D m in _scanMarkers.Values)
+		{
+			if (GodotObject.IsInstanceValid(m))
+			{
+				m.QueueFree();
+			}
+		}
+		_scanMarkers.Clear();
+	}
+
+	// Сброс способностей в начале раунда (вызывается для локального игрока).
+	public void ResetAbilities()
+	{
+		Stamina = G.Abilities.StaminaMax;
+		_sprinting = false;
+		_staminaRegenDelay = 0f;
+		Crouching = false;
+		ApplyCrouchPose();
+		_scanCooldownLeft = 0f;
+		_scanRevealLeft = 0f;
+		ClearScanMarkers();
+	}
+
 	private void ApplyHorizontalMovement(Vector3 direction, float delta)
 	{
 		float acceleration = IsOnFloor() ? MoveAcceleration : AirAcceleration;
 		float deceleration = IsOnFloor() ? MoveDeceleration : AirAcceleration * 0.5f;
 
 		Vector3 horizontalVelocity = new(_targetVelocity.X, 0f, _targetVelocity.Z);
-		Vector3 targetHorizontal = direction * Speed;
+		Vector3 targetHorizontal = direction * Speed * _speedMultiplier;
 
 		if (targetHorizontal.LengthSquared() > 0)
 		{

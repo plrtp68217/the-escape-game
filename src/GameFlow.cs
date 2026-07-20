@@ -122,6 +122,31 @@ public partial class GameFlow : Node
 				? FormatTime(RoundManager.Instance.RemainingSeconds)
 				: string.Empty);
 		_ui.SetHealth(inGameplay ? FormatHealth(local) : string.Empty);
+		_ui.SetStamina(inGameplay ? FormatStamina(local) : string.Empty);
+		_ui.SetAbility(inGameplay ? FormatAbility(local) : string.Empty);
+	}
+
+	// Полоска выносливости (10 сегментов, ASCII — гарантированно в любом шрифте).
+	private static string FormatStamina(PlayerController player)
+	{
+		int filled = Mathf.Clamp(Mathf.RoundToInt(player.StaminaRatio * 10f), 0, 10);
+		return "Бег [" + new string('=', filled) + new string('-', 10 - filled) + "]";
+	}
+
+	// Статус скана — только у надзирателя.
+	private static string FormatAbility(PlayerController player)
+	{
+		if (player.Role != PlayerRole.Warden)
+		{
+			return string.Empty;
+		}
+
+		if (player.ScanActive)
+		{
+			return "Скан активен";
+		}
+
+		return player.ScanReady ? "Скан [R]: готов" : $"Скан: {player.ScanCooldownSeconds}с";
 	}
 
 	private static string FormatHealth(PlayerController player)
@@ -290,6 +315,7 @@ public partial class GameFlow : Node
 		local.GlobalPosition = ComputeSpawn(local.PlayerId, localInfo.Role);
 		// Гасим остаточную скорость, чтобы после телепорта на спавн игрока не несло.
 		local.Velocity = Vector3.Zero;
+		local.ResetAbilities();
 
 		bool isWarden = localInfo.Role == PlayerRole.Warden;
 		_ui.SetTip(isWarden ? G.Messages.WardenHint : G.Messages.PrisonerHint);
