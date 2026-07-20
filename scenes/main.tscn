@@ -2,144 +2,369 @@
 
 [ext_resource type="Script" uid="uid://bfuhnc0esrq36" path="res://src/Main.cs" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/cell.tscn" id="2_cell"]
-[ext_resource type="PackedScene" uid="uid://cmpx083xfrj8e" path="res://scenes/items/health.tscn" id="3_health"]
+[ext_resource type="PackedScene" path="res://scenes/barrier.tscn" id="3_barrier"]
 [ext_resource type="Script" uid="uid://ji5si3bpobv" path="res://src/ExitZone.cs" id="4_exit"]
+[ext_resource type="PackedScene" path="res://scenes/items/screwdriver.tscn" id="5_screwdriver"]
+[ext_resource type="PackedScene" path="res://scenes/items/cutters.tscn" id="6_cutters"]
+[ext_resource type="PackedScene" path="res://scenes/items/cipher.tscn" id="7_cipher"]
+[ext_resource type="PackedScene" path="res://scenes/items/shovel.tscn" id="8_shovel"]
+[ext_resource type="PackedScene" path="res://scenes/items/explosive.tscn" id="9_explosive"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
-size = Vector3(60, 2, 60)
+size = Vector3(72, 2, 84)
 
 [sub_resource type="BoxMesh" id="ground_mesh"]
-size = Vector3(60, 2, 60)
+size = Vector3(72, 2, 84)
 
-[sub_resource type="BoxShape3D" id="ns_shape"]
-size = Vector3(30.5, 4, 0.3)
+[sub_resource type="StandardMaterial3D" id="mat_ground"]
+albedo_color = Color(0.22, 0.23, 0.26, 1)
 
 [sub_resource type="StandardMaterial3D" id="mat_wall"]
 albedo_color = Color(0.5, 0.5, 0.55, 1)
 
-[sub_resource type="BoxMesh" id="ns_mesh"]
-size = Vector3(30.5, 4, 0.3)
+[sub_resource type="BoxShape3D" id="bnd_ns"]
+size = Vector3(64, 4, 0.5)
 
-[sub_resource type="BoxShape3D" id="we_shape"]
-size = Vector3(0.3, 4, 28)
+[sub_resource type="BoxMesh" id="bnd_ns_mesh"]
+size = Vector3(64, 4, 0.5)
 
-[sub_resource type="BoxMesh" id="we_mesh"]
-size = Vector3(0.3, 4, 28)
+[sub_resource type="BoxShape3D" id="bnd_we"]
+size = Vector3(0.5, 4, 72)
+
+[sub_resource type="BoxMesh" id="bnd_we_mesh"]
+size = Vector3(0.5, 4, 72)
+
+[sub_resource type="BoxShape3D" id="h15"]
+size = Vector3(15, 4, 0.4)
+
+[sub_resource type="BoxMesh" id="h15_mesh"]
+size = Vector3(15, 4, 0.4)
+
+[sub_resource type="BoxShape3D" id="h14"]
+size = Vector3(14, 4, 0.4)
+
+[sub_resource type="BoxMesh" id="h14_mesh"]
+size = Vector3(14, 4, 0.4)
+
+[sub_resource type="BoxShape3D" id="h7"]
+size = Vector3(7, 4, 0.4)
+
+[sub_resource type="BoxMesh" id="h7_mesh"]
+size = Vector3(7, 4, 0.4)
+
+[sub_resource type="BoxShape3D" id="h6"]
+size = Vector3(6, 4, 0.4)
+
+[sub_resource type="BoxMesh" id="h6_mesh"]
+size = Vector3(6, 4, 0.4)
 
 [sub_resource type="BoxShape3D" id="exit_shape"]
-size = Vector3(2.5, 3, 26)
+size = Vector3(56, 3, 8)
 
 [sub_resource type="StandardMaterial3D" id="mat_exit"]
 transparency = 1
 albedo_color = Color(0.2, 0.9, 0.3, 0.25)
 
 [sub_resource type="BoxMesh" id="exit_mesh"]
-size = Vector3(2.5, 3, 26)
+size = Vector3(56, 3, 8)
 
-[node name="Main" type="Node3D" unique_id=1187686429]
+[node name="Main" type="Node3D"]
 script = ExtResource("1_main")
 
-[node name="Ground" type="StaticBody3D" parent="." unique_id=1000922661]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+[node name="Ground" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 6)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=1488583136]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
 shape = SubResource("ground_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=485893619]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
 mesh = SubResource("ground_mesh")
+material_override = SubResource("mat_ground")
 
-[node name="Players" type="Node3D" parent="." unique_id=848124158]
+[node name="Players" type="Node3D" parent="."]
 
-[node name="DroppedItems" type="Node3D" parent="." unique_id=377127251]
+[node name="DroppedItems" type="Node3D" parent="."]
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=1950020329]
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
 _spawnable_scenes = PackedStringArray("uid://cd1e025wlou5a")
 spawn_path = NodePath("../Players")
 
-[node name="DirectionalLightPivot" type="Node3D" parent="." unique_id=1452202714]
-transform = Transform3D(0.9999847, 1.0574942e-17, 0.005534634, -0.005534634, 1.9106565e-15, 0.9999847, 6.310887e-30, -1, 1.9106853e-15, 0, 13.162506, 0)
+[node name="DirectionalLightPivot" type="Node3D" parent="."]
+transform = Transform3D(0.9999847, 1.0574942e-17, 0.005534634, -0.005534634, 1.9106565e-15, 0.9999847, 6.310887e-30, -1, 1.9106853e-15, 0, 13.162506, 6)
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot" unique_id=1338227163]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1368684e-13, 62)
 light_indirect_energy = 1.576
 
-[node name="Cell0" parent="." unique_id=1616161363 instance=ExtResource("2_cell")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -10.5)
+[node name="OmniNorth" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -20)
+omni_range = 30
 
-[node name="OmniLight3D" type="OmniLight3D" parent="Cell0" unique_id=278185654]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 1.3635931, 0.042568207)
+[node name="OmniCentral" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 6)
+omni_range = 30
 
-[node name="Cell1" parent="." unique_id=439962297 instance=ExtResource("2_cell")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -3.5)
+[node name="OmniSouth" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 32)
+omni_range = 30
 
-[node name="OmniLight3D" type="OmniLight3D" parent="Cell1" unique_id=1737145032]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 0.91245365, -0.1231308)
+[node name="BoundaryNorth" type="StaticBody3D" parent="."]
 
-[node name="Cell2" parent="." unique_id=62329845 instance=ExtResource("2_cell")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 3.5)
+[node name="Coll" type="CollisionShape3D" parent="BoundaryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -30)
+shape = SubResource("bnd_ns")
 
-[node name="OmniLight3D" type="OmniLight3D" parent="Cell2" unique_id=626851184]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 1.0660412, -0.064092636)
-
-[node name="Cell3" parent="." unique_id=162677311 instance=ExtResource("2_cell")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 10.5)
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Cell3" unique_id=826813554]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 0.90029335, 0.14940262)
-
-[node name="Hall" type="StaticBody3D" parent="." unique_id=1347162961]
-
-[node name="NorthColl" type="CollisionShape3D" parent="Hall" unique_id=1303921313]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, -14)
-shape = SubResource("ns_shape")
-
-[node name="NorthMesh" type="MeshInstance3D" parent="Hall" unique_id=928528773]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, -14)
+[node name="Mesh" type="MeshInstance3D" parent="BoundaryNorth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -30)
+mesh = SubResource("bnd_ns_mesh")
 material_override = SubResource("mat_wall")
-mesh = SubResource("ns_mesh")
 
-[node name="SouthColl" type="CollisionShape3D" parent="Hall" unique_id=878818715]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, 14)
-shape = SubResource("ns_shape")
+[node name="BoundarySouth" type="StaticBody3D" parent="."]
 
-[node name="SouthMesh" type="MeshInstance3D" parent="Hall" unique_id=1140196394]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.75, 2, 14)
+[node name="Coll" type="CollisionShape3D" parent="BoundarySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 42)
+shape = SubResource("bnd_ns")
+
+[node name="Mesh" type="MeshInstance3D" parent="BoundarySouth"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 42)
+mesh = SubResource("bnd_ns_mesh")
 material_override = SubResource("mat_wall")
-mesh = SubResource("ns_mesh")
 
-[node name="WestColl" type="CollisionShape3D" parent="Hall" unique_id=177002209]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 2, 0)
-shape = SubResource("we_shape")
+[node name="BoundaryWest" type="StaticBody3D" parent="."]
 
-[node name="WestMesh" type="MeshInstance3D" parent="Hall" unique_id=587583181]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 2, 0)
+[node name="Coll" type="CollisionShape3D" parent="BoundaryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 2, 6)
+shape = SubResource("bnd_we")
+
+[node name="Mesh" type="MeshInstance3D" parent="BoundaryWest"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 2, 6)
+mesh = SubResource("bnd_we_mesh")
 material_override = SubResource("mat_wall")
-mesh = SubResource("we_mesh")
 
-[node name="EastColl" type="CollisionShape3D" parent="Hall" unique_id=953400173]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 0)
-shape = SubResource("we_shape")
+[node name="BoundaryEast" type="StaticBody3D" parent="."]
 
-[node name="EastMesh" type="MeshInstance3D" parent="Hall" unique_id=1660745803]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 0)
+[node name="Coll" type="CollisionShape3D" parent="BoundaryEast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 2, 6)
+shape = SubResource("bnd_we")
+
+[node name="Mesh" type="MeshInstance3D" parent="BoundaryEast"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 2, 6)
+mesh = SubResource("bnd_we_mesh")
 material_override = SubResource("mat_wall")
-mesh = SubResource("we_mesh")
 
-[node name="HealthPickup" parent="." unique_id=1704881896 instance=ExtResource("3_health")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 6)
+[node name="SeparatorNC" type="StaticBody3D" parent="."]
 
-[node name="ExitZone" type="Area3D" parent="." unique_id=1392575960]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 0)
+[node name="S0Coll" type="CollisionShape3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.5, 2, -10)
+shape = SubResource("h15")
+
+[node name="S0Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.5, 2, -10)
+mesh = SubResource("h15_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="S1Coll" type="CollisionShape3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, -10)
+shape = SubResource("h14")
+
+[node name="S1Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, -10)
+mesh = SubResource("h14_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="S2Coll" type="CollisionShape3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, -10)
+shape = SubResource("h14")
+
+[node name="S2Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, -10)
+mesh = SubResource("h14_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="S3Coll" type="CollisionShape3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 2, -10)
+shape = SubResource("h15")
+
+[node name="S3Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 2, -10)
+mesh = SubResource("h15_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="GauntletCS" type="StaticBody3D" parent="."]
+
+[node name="G0Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.5, 2, 22)
+shape = SubResource("h7")
+
+[node name="G0Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.5, 2, 22)
+mesh = SubResource("h7_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="G1Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 2, 22)
+shape = SubResource("h6")
+
+[node name="G1Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 2, 22)
+mesh = SubResource("h6_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="G2Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 22)
+shape = SubResource("h6")
+
+[node name="G2Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 22)
+mesh = SubResource("h6_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="G3Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 22)
+shape = SubResource("h6")
+
+[node name="G3Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 22)
+mesh = SubResource("h6_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="G4Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 22)
+shape = SubResource("h6")
+
+[node name="G4Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 22)
+mesh = SubResource("h6_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="G5Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 22)
+shape = SubResource("h6")
+
+[node name="G5Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 22)
+mesh = SubResource("h6_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="G6Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, 22)
+shape = SubResource("h6")
+
+[node name="G6Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, 22)
+mesh = SubResource("h6_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="G7Coll" type="CollisionShape3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.5, 2, 22)
+shape = SubResource("h7")
+
+[node name="G7Mesh" type="MeshInstance3D" parent="GauntletCS"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.5, 2, 22)
+mesh = SubResource("h7_mesh")
+material_override = SubResource("mat_wall")
+
+[node name="Cell0" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0, -22)
+
+[node name="Cell1" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 24, 0, -22)
+
+[node name="Cell2" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 14)
+
+[node name="Cell3" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0, 10)
+
+[node name="Cell4" parent="." instance=ExtResource("2_cell")]
+transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 24, 0, 10)
+
+[node name="GateVent0" parent="." instance=ExtResource("3_barrier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 2, 22)
+Kind = 0
+
+[node name="GateGrate0" parent="." instance=ExtResource("3_barrier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 2, 22)
+Kind = 1
+
+[node name="GateCoded0" parent="." instance=ExtResource("3_barrier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, 22)
+Kind = 2
+
+[node name="GateRubble" parent="." instance=ExtResource("3_barrier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 22)
+Kind = 3
+
+[node name="GateVent1" parent="." instance=ExtResource("3_barrier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 22)
+Kind = 0
+
+[node name="GateGrate1" parent="." instance=ExtResource("3_barrier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 2, 22)
+Kind = 1
+
+[node name="GateCoded1" parent="." instance=ExtResource("3_barrier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 2, 22)
+Kind = 2
+
+[node name="Screwdriver" parent="." instance=ExtResource("5_screwdriver")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -26)
+
+[node name="Shovel" parent="." instance=ExtResource("8_shovel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, -14)
+
+[node name="Explosive" parent="." instance=ExtResource("9_explosive")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1, -14)
+
+[node name="Cutters" parent="." instance=ExtResource("6_cutters")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1, 6)
+
+[node name="Cipher" parent="." instance=ExtResource("7_cipher")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1, 6)
+
+[node name="ExitZone" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 38)
 script = ExtResource("4_exit")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone" unique_id=1643530693]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone"]
 shape = SubResource("exit_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone" unique_id=129427626]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone"]
 material_override = SubResource("mat_exit")
 mesh = SubResource("exit_mesh")
 
-[node name="Label3D" type="Label3D" parent="ExitZone" unique_id=793100342]
-transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 1.2, 0)
+[node name="Label3D" type="Label3D" parent="ExitZone"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+billboard = 1
 text = "ВЫХОД"
-font_size = 50
+font_size = 80
+
+[node name="LabelScrewdriver" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -26)
+billboard = 1
+text = "Отвёртка"
+font_size = 40
+
+[node name="LabelShovel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2, -14)
+billboard = 1
+text = "Лопата"
+font_size = 40
+
+[node name="LabelExplosive" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 2, -14)
+billboard = 1
+text = "Взрывчатка"
+font_size = 40
+
+[node name="LabelCutters" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 6)
+billboard = 1
+text = "Кусачки"
+font_size = 40
+
+[node name="LabelCipher" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 6)
+billboard = 1
+text = "Шифр"
+font_size = 40

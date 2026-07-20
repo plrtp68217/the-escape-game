@@ -1,0 +1,25 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/Inventory/WorldItem.cs" id="1_wi"]
+
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(0.3, 0.2, 0.35)
+
+[sub_resource type="BoxMesh" id="mesh"]
+size = Vector3(0.25, 0.02, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.95, 0.9, 0.7, 1)
+roughness = 0.9
+
+[node name="Cipher" type="Area3D"]
+script = ExtResource("1_wi")
+ItemId = "cipher"
+Count = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("shape")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh")
+material_override = SubResource("mat")

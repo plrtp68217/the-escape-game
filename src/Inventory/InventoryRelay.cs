@@ -148,9 +148,10 @@ public partial class InventoryRelay : Node
         container.AddChild(item);
         item.GlobalPosition = position;
 
-        // Крохотные модели (пилюля) увеличиваем до видимого размера, иначе на полу
-        // их не разглядеть. Масштабируется и триггер подбора — это ок.
-        ModelBounds.EnsureMinVisibleSize(item, G.DropMinVisibleSize);
+        // Приводим модель к видимому размеру: крохотные (пилюля) увеличиваем,
+        // гигантские (нативный масштаб GLB) уменьшаем. Масштабируется и триггер
+        // подбора — это ок.
+        ModelBounds.ClampVisibleSize(item, G.DropMinVisibleSize, G.DropMaxVisibleSize);
     }
 
     // Сервер сообщает всем, что предмет в мире нужно удалить.

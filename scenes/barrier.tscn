@@ -1,0 +1,26 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/Interaction/Barrier.cs" id="1_barrier"]
+
+[sub_resource type="BoxShape3D" id="shape_slab"]
+size = Vector3(2, 4, 0.3)
+
+[sub_resource type="BoxMesh" id="mesh_slab"]
+size = Vector3(2, 4, 0.3)
+
+[sub_resource type="BoxShape3D" id="shape_zone"]
+size = Vector3(3, 4, 3)
+
+[node name="Barrier" type="StaticBody3D"]
+script = ExtResource("1_barrier")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("shape_slab")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("mesh_slab")
+
+[node name="InteractZone" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractZone"]
+shape = SubResource("shape_zone")

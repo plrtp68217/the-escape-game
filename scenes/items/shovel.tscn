@@ -1,0 +1,38 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://src/Inventory/WorldItem.cs" id="1_wi"]
+
+[sub_resource type="BoxShape3D" id="shape"]
+size = Vector3(0.35, 0.35, 0.9)
+
+[sub_resource type="BoxMesh" id="handle"]
+size = Vector3(0.06, 0.06, 0.8)
+
+[sub_resource type="StandardMaterial3D" id="mat_handle"]
+albedo_color = Color(0.55, 0.38, 0.2, 1)
+roughness = 0.8
+
+[sub_resource type="BoxMesh" id="head"]
+size = Vector3(0.22, 0.02, 0.28)
+
+[sub_resource type="StandardMaterial3D" id="mat_head"]
+albedo_color = Color(0.6, 0.6, 0.65, 1)
+metallic = 0.5
+roughness = 0.4
+
+[node name="Shovel" type="Area3D"]
+script = ExtResource("1_wi")
+ItemId = "shovel"
+Count = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("shape")
+
+[node name="Handle" type="MeshInstance3D" parent="."]
+mesh = SubResource("handle")
+material_override = SubResource("mat_handle")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
+mesh = SubResource("head")
+material_override = SubResource("mat_head")

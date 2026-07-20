@@ -259,6 +259,11 @@ public partial class GameFlow : Node
 			door.ResetState();
 		}
 
+		foreach (Interaction.Barrier barrier in Interaction.Barrier.All)
+		{
+			barrier.ResetState();
+		}
+
 		foreach (PlayerController player in PlayerController.AllPlayers.Values)
 		{
 			player.ResetForRound();

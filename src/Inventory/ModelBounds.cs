@@ -41,9 +41,11 @@ public static class ModelBounds
         root.Scale *= scale;
     }
 
-    // Увеличивает узел, только если он мельче minSize (нормальные предметы не
-    // трогаем). Спасает крохотные модели вроде пилюли, которые иначе не видно.
-    public static void EnsureMinVisibleSize(Node3D root, float minSize)
+    // Приводит наибольший видимый размер узла в диапазон [minSize, maxSize]:
+    // увеличивает слишком мелкие модели (пилюля иначе не видна) И уменьшает
+    // слишком крупные (у которых нативный масштаб GLB делает предмет гигантским
+    // при дропе). Модели, уже попадающие в диапазон, не трогаем.
+    public static void ClampVisibleSize(Node3D root, float minSize, float maxSize)
     {
         if (!TryComputeWorldAabb(root, out Aabb world) || world.Size.LengthSquared() <= 0f)
         {
@@ -51,12 +53,13 @@ public static class ModelBounds
         }
 
         float maxDim = world.Size[(int)world.Size.MaxAxisIndex()];
-        if (maxDim >= minSize)
+        float target = Mathf.Clamp(maxDim, minSize, maxSize);
+        if (Mathf.IsEqualApprox(target, maxDim))
         {
             return;
         }
 
-        root.Scale *= Mathf.Clamp(minSize / maxDim, 1f, 1000f);
+        root.Scale *= target / maxDim;
     }
 
     public static IEnumerable<VisualInstance3D> FindVisuals(Node node)

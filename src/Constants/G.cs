@@ -72,17 +72,18 @@ public static class G
     // Spawn
     public static readonly Vector3 SpawnPosition = new(0, 1, 0);
 
-    // Надзиратель спавнится в общем зале, у выхода.
-    public static readonly Vector3 WardenSpawn = new(8, 1, 0);
+    // Надзиратель спавнится в центральном узле (пост охраны).
+    public static readonly Vector3 WardenSpawn = new(0, 1, 2);
 
     // По одной точке на камеру: каждый заключённый попадает в свою запертую
-    // клетку. Соответствуют расположению Cell0..Cell3 в main.tscn.
+    // клетку. Соответствуют расположению Cell0..Cell4 в main.tscn.
     public static readonly Vector3[] PrisonerCellSpawns =
     {
-        new(-8, 1, -10.5f),
-        new(-8, 1, -3.5f),
-        new(-8, 1, 3.5f),
-        new(-8, 1, 10.5f),
+        new(-24, 1, -22), // Cell0 / К1 (север-запад)
+        new(24, 1, -22),  // Cell1 / К2 (север-восток)
+        new(0, 1, 14),    // Cell2 / К3 (центр)
+        new(-24, 1, 10),  // Cell3 / К4 (центр-запад)
+        new(24, 1, 10),   // Cell4 / К5 (центр-восток)
     };
 
     // Input
@@ -165,9 +166,11 @@ public static class G
     // проваливался под текстуры (у предметов нет физики — они не падают).
     public const float DropDistance = 0.9f;
     public const float DropHeight = 0.8f;
-    // Минимальный видимый размер выброшенного предмета — крохотные модели (пилюля)
-    // увеличиваем до него, иначе на полу их не видно. Нормальные предметы не трогаем.
+    // Видимый размер выброшенного предмета зажимается в диапазон [min, max]:
+    // крохотные модели (пилюля) увеличиваем, чтобы их было видно на полу, а
+    // гигантские (нативный масштаб GLB) уменьшаем, чтобы не заполняли экран.
     public const float DropMinVisibleSize = 0.12f;
+    public const float DropMaxVisibleSize = 0.5f;
 
     // Двери камер
     public static class Door
@@ -177,5 +180,17 @@ public static class G
 
         public const string KeyItemId = "key";
         public const string AxeItemId = "axe";
+    }
+
+    // Инструменты для барьеров (Веха 7). Id совпадают с ItemDatabase.
+    public static class Tools
+    {
+        public const string Screwdriver = "screwdriver";
+        public const string Crowbar = "crowbar";
+        public const string Cutters = "cutters";
+        public const string Keycard = "keycard";
+        public const string Cipher = "cipher";
+        public const string Shovel = "shovel";
+        public const string Explosive = "explosive";
     }
 }
