@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 
 namespace EscapeGame.Interaction;
@@ -9,6 +10,10 @@ namespace EscapeGame.Interaction;
 /// </summary>
 public partial class CellDoor : StaticBody3D, IInteractable
 {
+    // Все двери в сцене — по образцу PlayerController.AllPlayers. Нужен, чтобы
+    // при перезапуске раунда запереть их все, не завися от путей в сцене.
+    public static readonly HashSet<CellDoor> All = new();
+
     [Export]
     public bool Locked { get; set; } = true;
 
@@ -29,7 +34,27 @@ public partial class CellDoor : StaticBody3D, IInteractable
         _zone.BodyEntered += OnBodyEntered;
         _zone.BodyExited += OnBodyExited;
 
+        All.Add(this);
+
         ApplyVisual();
+    }
+
+    public override void _ExitTree()
+    {
+        All.Remove(this);
+    }
+
+    // Возврат двери в исходное состояние (заперта, закрыта, цела) при
+    // перезапуске раунда. Только сервер; состояние рассылается через SyncState.
+    public void ResetState()
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        _health = G.Door.Health;
+        SetState(isOpen: false, locked: true);
     }
 
     private void OnBodyEntered(Node3D body)

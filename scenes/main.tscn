@@ -50,7 +50,7 @@ mesh = SubResource("ground_mesh")
 
 [node name="Players" type="Node3D" parent="." unique_id=848124158]
 
-[node name="DroppedItems" type="Node3D" parent="."]
+[node name="DroppedItems" type="Node3D" parent="." unique_id=377127251]
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=1950020329]
 _spawnable_scenes = PackedStringArray("uid://cd1e025wlou5a")
@@ -66,14 +66,26 @@ light_indirect_energy = 1.576
 [node name="Cell0" parent="." unique_id=1616161363 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -10.5)
 
+[node name="OmniLight3D" type="OmniLight3D" parent="Cell0" unique_id=278185654]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 1.3635931, 0.042568207)
+
 [node name="Cell1" parent="." unique_id=439962297 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -3.5)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Cell1" unique_id=1737145032]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 0.91245365, -0.1231308)
 
 [node name="Cell2" parent="." unique_id=62329845 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 3.5)
 
+[node name="OmniLight3D" type="OmniLight3D" parent="Cell2" unique_id=626851184]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 1.0660412, -0.064092636)
+
 [node name="Cell3" parent="." unique_id=162677311 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, 10.5)
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Cell3" unique_id=826813554]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.12778664, 0.90029335, 0.14940262)
 
 [node name="Hall" type="StaticBody3D" parent="." unique_id=1347162961]
 
@@ -115,7 +127,6 @@ mesh = SubResource("we_mesh")
 
 [node name="HealthPickup" parent="." unique_id=1704881896 instance=ExtResource("3_health")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2, 1, 6)
-Count = 1
 
 [node name="ExitZone" type="Area3D" parent="." unique_id=1392575960]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16.5, 1.5, 0)
@@ -132,6 +143,3 @@ mesh = SubResource("exit_mesh")
 transform = Transform3D(-4.371139e-08, 0, -1, 0, 1, 0, 1, 0, -4.371139e-08, 0, 1.2, 0)
 text = "ВЫХОД"
 font_size = 50
-
-[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1737145032]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.7217209, 1.8881814, 0)

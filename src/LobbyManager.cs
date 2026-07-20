@@ -28,6 +28,10 @@ public partial class LobbyManager : Node
 
 	private bool _isGameStarted;
 
+	// Кто был надзирателем в прошлом раунде — чтобы при перезапуске роль по
+	// возможности досталась другому игроку.
+	private long _lastWardenId;
+
 	public override void _Ready()
 	{
 		Instance = this;
@@ -263,13 +267,34 @@ public partial class LobbyManager : Node
 		// Сначала раздаём и рассылаем роли (reliable-ordered гарантирует, что
 		// они дойдут до клиентов раньше, чем GameStarting), затем запускаем игру.
 		AssignRoles();
+		BroadcastStart();
+	}
 
+	// Перезапуск раунда с теми же игроками (без выхода в лобби). Только сервер:
+	// заново раздаёт роли и запускает новый раунд у всех тем же путём, что и
+	// первый старт. Сброс мира (двери, инвентарь, здоровье) делает вызывающая
+	// сторона до этого вызова.
+	public void StartRematch()
+	{
+		if (!Multiplayer.IsServer())
+		{
+			return;
+		}
+
+		AssignRoles();
+		BroadcastStart();
+	}
+
+	// Рассылает всем пирам сигнал старта раунда (локально + по сети).
+	private void BroadcastStart()
+	{
 		GameStarting();
 		Rpc(nameof(GameStarting));
 	}
 
-	// Только сервер. Один случайный игрок становится надзирателем, остальные —
-	// заключённые. Роли рассылаются всем пирам.
+	// Только сервер. Один игрок становится надзирателем, остальные —
+	// заключённые. При наличии более одного игрока прошлый надзиратель по
+	// возможности исключается, чтобы роль менялась между раундами.
 	private void AssignRoles()
 	{
 		var ids = _players.Keys.ToList();
@@ -278,13 +303,22 @@ public partial class LobbyManager : Node
 			return;
 		}
 
-		int wardenIndex = (int)(GD.Randi() % (uint)ids.Count);
-
-		for (int i = 0; i < ids.Count; i++)
+		var candidates = ids.Count > 1
+			? ids.Where(id => id != _lastWardenId).ToList()
+			: ids;
+		if (candidates.Count == 0)
 		{
-			PlayerRole role = i == wardenIndex ? PlayerRole.Warden : PlayerRole.Prisoner;
-			SyncPlayerRole(ids[i], (int)role);
-			Rpc(nameof(SyncPlayerRole), ids[i], (int)role);
+			candidates = ids;
+		}
+
+		long wardenId = candidates[(int)(GD.Randi() % (uint)candidates.Count)];
+		_lastWardenId = wardenId;
+
+		foreach (long id in ids)
+		{
+			PlayerRole role = id == wardenId ? PlayerRole.Warden : PlayerRole.Prisoner;
+			SyncPlayerRole(id, (int)role);
+			Rpc(nameof(SyncPlayerRole), id, (int)role);
 		}
 	}
 
@@ -306,6 +340,7 @@ public partial class LobbyManager : Node
 	{
 		_players.Clear();
 		_isGameStarted = false;
+		_lastWardenId = 0;
 		LobbyUpdated?.Invoke();
 	}
 }

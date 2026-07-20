@@ -28,6 +28,17 @@ public class PlayerInventory
         }
     }
 
+    // Полностью очищает инвентарь и снимает экипировку. Используется при
+    // перезапуске раунда, чтобы вернуть стартовый набор.
+    public void Clear()
+    {
+        foreach (InventorySlot slot in _slots)
+        {
+            slot.Clear();
+        }
+        EquippedSlotIndex = -1;
+    }
+
     public int AddItem(InventoryItem item, int count)
     {
         if (item == null)

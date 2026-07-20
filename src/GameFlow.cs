@@ -15,6 +15,11 @@ public partial class GameFlow : Node
 	private bool _inventoryOpen;
 	private bool _inventoryBound;
 
+	// Поколение обучающей подсказки: отложенный сброс срабатывает, только если
+	// с момента его планирования не начался новый раунд (иначе стал бы затирать
+	// подсказку следующего раунда неверной ролью).
+	private int _tipGeneration;
+
 	// Сообщение, которое нужно показать в меню после перезагрузки сцены.
 	// Статическое, т.к. переживает пересоздание узла GameFlow.
 	private static string _pendingStatus = string.Empty;
@@ -29,6 +34,7 @@ public partial class GameFlow : Node
 		_ui.LeaveRequested += () => ReturnToMenu();
 		_ui.ReadyToggled += OnReadyToggled;
 		_ui.StartRequested += OnStartRequested;
+		_ui.RematchRequested += OnRematchRequested;
 		_ui.InventorySlotSelected += OnInventorySlotSelected;
 		_ui.InventorySlotDropRequested += OnInventorySlotDropRequested;
 
@@ -143,6 +149,7 @@ public partial class GameFlow : Node
 			_ui.LeaveRequested -= () => ReturnToMenu();
 			_ui.ReadyToggled -= OnReadyToggled;
 			_ui.StartRequested -= OnStartRequested;
+			_ui.RematchRequested -= OnRematchRequested;
 			_ui.InventorySlotSelected -= OnInventorySlotSelected;
 			_ui.InventorySlotDropRequested -= OnInventorySlotDropRequested;
 		}
@@ -226,11 +233,38 @@ public partial class GameFlow : Node
 		_ui.ShowRoundResult(result == RoundResult.PrisonersWin
 			? "Заключённые сбежали!"
 			: "Надзиратель победил!");
+		// Перезапуск раунда инициирует только хост; остальные ждут его решения.
+		_ui.ConfigureRoundOver(LobbyManager.Instance.IsHost);
 		_ui.ShowTip(false);
 		_ui.SetInteractPrompt(string.Empty);
 		_ui.SetTimer(string.Empty);
 		_ui.SetHealth(string.Empty);
 		Input.MouseMode = Input.MouseModeEnum.Visible;
+	}
+
+	// Хост запускает новый раунд с теми же игроками. Сначала возвращаем мир в
+	// исходное состояние на сервере (двери заперты, инвентари восстановлены), а
+	// затем LobbyManager переназначает роли и запускает раунд у всех тем же
+	// путём, что и первый старт (OnGameStarted). Здоровье и таймер сбрасываются
+	// внутри OnGameStarted (CombatRelay.ResetAll + RoundManager.StartRound).
+	private void OnRematchRequested()
+	{
+		if (!LobbyManager.Instance.IsHost)
+		{
+			return;
+		}
+
+		foreach (Interaction.CellDoor door in Interaction.CellDoor.All)
+		{
+			door.ResetState();
+		}
+
+		foreach (PlayerController player in PlayerController.AllPlayers.Values)
+		{
+			player.ResetForRound();
+		}
+
+		LobbyManager.Instance.StartRematch();
 	}
 
 	// Раздаёт роли всем игрокам на этом пире: меняет модель у каждого, а своего
@@ -249,7 +283,35 @@ public partial class GameFlow : Node
 		}
 
 		local.GlobalPosition = ComputeSpawn(local.PlayerId, localInfo.Role);
-		_ui.SetTip(localInfo.Role == PlayerRole.Warden ? "Ты — Надзиратель" : "Ты — Заключённый");
+		// Гасим остаточную скорость, чтобы после телепорта на спавн игрока не несло.
+		local.Velocity = Vector3.Zero;
+
+		bool isWarden = localInfo.Role == PlayerRole.Warden;
+		_ui.SetTip(isWarden ? G.Messages.WardenHint : G.Messages.PrisonerHint);
+		ScheduleTipReset(isWarden);
+	}
+
+	// Через несколько секунд после старта сворачивает обучающую подсказку до
+	// краткого названия роли. Токен поколения отсекает срабатывание таймера от
+	// предыдущего раунда (роль между раундами может смениться).
+	private void ScheduleTipReset(bool isWarden)
+	{
+		int generation = ++_tipGeneration;
+		SceneTreeTimer timer = GetTree().CreateTimer(G.Round.HintDuration);
+		timer.Timeout += () =>
+		{
+			// Таймер живёт в SceneTree и мог пережить перезагрузку сцены (возврат
+			// в меню) — тогда этот GameFlow уже освобождён, обращаться к нему нельзя.
+			if (!IsInstanceValid(this))
+			{
+				return;
+			}
+
+			if (generation == _tipGeneration && GameState.CurrentPhase == GamePhase.Gameplay)
+			{
+				_ui.SetTip(isWarden ? G.Messages.WardenRole : G.Messages.PrisonerRole);
+			}
+		};
 	}
 
 	// Надзиратель встаёт на свою точку; каждый заключённый — в отдельную камеру.

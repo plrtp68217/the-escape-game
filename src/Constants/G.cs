@@ -100,6 +100,16 @@ public static class G
         public const string DefaultPlayerName = "Игрок";
         public const string GameInProgress = "Игра уже идёт";
         public const string NoPlayers = "Нет игроков";
+
+        // Краткое название роли (после того как обучающая подсказка свернулась).
+        public const string WardenRole = "Ты — Надзиратель";
+        public const string PrisonerRole = "Ты — Заключённый";
+
+        // Обучающие подсказки с управлением в начале раунда.
+        public const string WardenHint =
+            "Ты — Надзиратель. Не дай сбежать: ЛКМ — удар топором, [F] — запереть дверь. Держи заключённых!";
+        public const string PrisonerHint =
+            "Ты — Заключённый. Сбеги: [F] — действие, ЛКМ — выбить дверь топором, [E] — инвентарь. Дойди до выхода!";
     }
 
     // Lobby
@@ -113,6 +123,10 @@ public static class G
     {
         // Сколько секунд у заключённых на побег, прежде чем побеждает надзиратель.
         public const int Duration = 180;
+
+        // Сколько секунд в начале раунда показывать обучающую подсказку с
+        // управлением, прежде чем свернуть её до краткого названия роли.
+        public const float HintDuration = 8f;
     }
 
     // Здоровье и бой

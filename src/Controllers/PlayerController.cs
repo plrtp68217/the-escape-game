@@ -143,11 +143,7 @@ public partial class PlayerController : CharacterBody3D
 
 		if (Multiplayer.IsServer())
 		{
-			// Тестовое наполнение инвентаря для проверки UI.
-			Inventory.AddItem(Inv.ItemDatabase.Get("axe"), 1);
-			Inventory.AddItem(Inv.ItemDatabase.Get("health"), 3);
-			Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 2);
-
+			SeedStartingInventory();
 			Inv.InventoryRelay.Instance?.BroadcastInventory(this);
 		}
 		else if (IsMultiplayerAuthority())
@@ -157,6 +153,29 @@ public partial class PlayerController : CharacterBody3D
 			// состояние у сервера, иначе инвентарь при первом открытии пуст.
 			Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestInventorySync), (long)PlayerId);
 		}
+	}
+
+	// Стартовый набор игрока. Только сервер (изменяет авторитетный инвентарь).
+	private void SeedStartingInventory()
+	{
+		// Тестовое наполнение инвентаря для проверки UI.
+		Inventory.AddItem(Inv.ItemDatabase.Get("axe"), 1);
+		Inventory.AddItem(Inv.ItemDatabase.Get("health"), 3);
+		Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 2);
+	}
+
+	// Сброс инвентаря к стартовому набору при перезапуске раунда. Только сервер;
+	// новое состояние рассылается всем через InventoryRelay.
+	public void ResetForRound()
+	{
+		if (!Multiplayer.IsServer())
+		{
+			return;
+		}
+
+		Inventory.Clear();
+		SeedStartingInventory();
+		Inv.InventoryRelay.Instance?.BroadcastInventory(this);
 	}
 
 	public override void _ExitTree()

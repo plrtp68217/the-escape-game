@@ -28,6 +28,7 @@ public partial class UIManager : Node
     public event System.Action<string> JoinRequested;
     public event System.Action<bool> ReadyToggled;
     public event System.Action StartRequested;
+    public event System.Action RematchRequested;
     public event System.Action LeaveRequested;
     public event System.Action<int> InventorySlotSelected;
     public event System.Action<int> InventorySlotDropRequested;
@@ -50,6 +51,7 @@ public partial class UIManager : Node
         _pauseMenu.LeaveRequested += () => LeaveRequested?.Invoke();
 
         _roundOverMenu.LeaveRequested += () => LeaveRequested?.Invoke();
+        _roundOverMenu.RematchRequested += () => RematchRequested?.Invoke();
 
         _inventory = _screenManager.GetNode<InventoryUI>("Inventory");
         _inventory.SlotSelected += index => InventorySlotSelected?.Invoke(index);
@@ -130,6 +132,12 @@ public partial class UIManager : Node
     public void ShowRoundResult(string text)
     {
         _roundOverMenu.SetResult(text);
+    }
+
+    // Кнопка перезапуска доступна только хосту; остальные видят ожидание.
+    public void ConfigureRoundOver(bool isHost)
+    {
+        _roundOverMenu.ConfigureButtons(isHost);
     }
 
     // Визуальный фидбек боя (проксируется на слой HudEffects).
