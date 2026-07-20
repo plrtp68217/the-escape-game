@@ -8,7 +8,7 @@ namespace EscapeGame;
 public static class G
 {
     // Network
-    public const int Port = 7777;
+    public const int Port = 4444;
     public const int MaxPlayers = 8;
     public const string DefaultAddress = "127.0.0.1";
 
