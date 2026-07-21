@@ -1,5 +1,6 @@
 using System.Linq;
 using Godot;
+using EscapeGame.Logging;
 
 namespace EscapeGame;
 
@@ -63,7 +64,7 @@ public partial class GameFlow : Node
 	{
 		if (!_initialized)
 		{
-			GD.PushError("GameFlow must be initialized by Main before _Ready.");
+			Log.Error(Log.Cat.System, "GameFlow должен быть инициализирован из Main до _Ready.");
 		}
 	}
 
@@ -200,9 +201,11 @@ public partial class GameFlow : Node
 
 	private void StartHost()
 	{
+		Log.Info(Log.Cat.Game, $"Пользователь создаёт хост (имя «{_ui.PlayerName}»)");
 		Error err = NetworkManager.Instance.CreateHost();
 		if (err != Error.Ok)
 		{
+			Log.Error(Log.Cat.Game, $"Старт хоста не удался: {err}");
 			_ui.SetStatus($"{G.Messages.ServerStartError}: {err}");
 			return;
 		}
@@ -212,12 +215,18 @@ public partial class GameFlow : Node
 
 	private void JoinServer(string address)
 	{
+		Log.Info(Log.Cat.Game, $"Пользователь подключается к «{address}» (имя «{_ui.PlayerName}»)");
 		Error err = NetworkManager.Instance.JoinServer(address);
+		if (err != Error.Ok)
+		{
+			Log.Error(Log.Cat.Game, $"Запуск подключения к «{address}» не удался: {err}");
+		}
 		_ui.SetStatus(err != Error.Ok ? $"{G.Messages.JoinError}: {err}" : G.Messages.Joining);
 	}
 
 	private void OnNetworkConnected()
 	{
+		Log.Info(Log.Cat.Game, "Соединение установлено — входим в лобби");
 		EnterLobby(_ui.PlayerName);
 	}
 
@@ -385,11 +394,13 @@ public partial class GameFlow : Node
 
 	private void OnNetworkError(string reason)
 	{
+		Log.Error(Log.Cat.Game, $"Сетевая ошибка — возврат в меню: {reason}");
 		ReturnToMenu(reason);
 	}
 
 	private void OnJoinRejected()
 	{
+		Log.Warning(Log.Cat.Game, "Подключение отклонено — игра уже идёт");
 		ReturnToMenu(G.Messages.GameInProgress);
 	}
 

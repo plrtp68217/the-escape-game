@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using EscapeGame.Logging;
 
 namespace EscapeGame.Inventory;
 
@@ -49,7 +50,7 @@ public static class ItemDatabase
         var scene = GD.Load<PackedScene>(scenePath);
         if (scene == null)
         {
-            GD.PrintErr($"ItemDatabase: не удалось загрузить сцену предмета {scenePath}");
+            Log.Error(Log.Cat.Inventory, $"ItemDatabase: не удалось загрузить сцену предмета {scenePath}");
         }
 
         Texture2D icon = ItemIconRenderer.CreatePlaceholder(id);

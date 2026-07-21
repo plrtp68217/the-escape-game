@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using EscapeGame.Logging;
 using Inv = EscapeGame.Inventory;
 
 namespace EscapeGame;
@@ -276,7 +277,7 @@ public partial class PlayerController : CharacterBody3D
 		var scene = GD.Load<PackedScene>(modelPath);
 		if (scene == null)
 		{
-			GD.PrintErr($"PlayerController: не удалось загрузить модель {modelPath}");
+			Log.Error(Log.Cat.Game, $"PlayerController: не удалось загрузить модель {modelPath}");
 			return;
 		}
 
