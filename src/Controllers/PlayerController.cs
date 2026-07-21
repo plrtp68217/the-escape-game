@@ -104,6 +104,9 @@ public partial class PlayerController : CharacterBody3D
 	// Материал-подсветки поверженного игрока (общий на всех, ленивая инициализация).
 	private static StandardMaterial3D _downedHighlight;
 
+	// Материал-подсветка наведённого прицелом объекта (общий, ленивая инициализация).
+	private static StandardMaterial3D _targetHighlight;
+
 	public bool HasReviveTarget =>
 		_reviveTarget != null && GodotObject.IsInstanceValid(_reviveTarget);
 	public float ReviveProgress => _reviveProgress;
@@ -118,6 +121,9 @@ public partial class PlayerController : CharacterBody3D
 	public List<Interaction.IInteractable> NearbyInteractables { get; } = new();
 
 	private Interaction.IInteractable _targetInteractable;
+	// Узел, на котором сейчас висит подсветка-контур наведения (чтобы снять её при
+	// смене цели). Отличается от _targetInteractable только типом (нужен Node3D).
+	private Node3D _highlightedNode;
 	private bool _attackQueued;
 	private Vector3 _targetVelocity = Vector3.Zero;
 	private Node3D _pivot;
@@ -239,6 +245,7 @@ public partial class PlayerController : CharacterBody3D
 	public override void _ExitTree()
 	{
 		ClearScanMarkers();
+		ClearAimTarget();
 		AllPlayers.Remove(PlayerId);
 
 		if (LobbyManager.Instance != null)
@@ -437,6 +444,9 @@ public partial class PlayerController : CharacterBody3D
 		InventoryChanged?.Invoke();
 	}
 
+	// Регистрация «рядом» осталась от зон взаимодействия (двери/барьеры/предметы),
+	// но цель теперь выбирается ПРИЦЕЛОМ (UpdateAimTarget), а не по близости —
+	// список ниже больше не управляет наведением, оставлен как задел/совместимость.
 	public void RegisterInteractable(Interaction.IInteractable interactable)
 	{
 		if (!IsMultiplayerAuthority())
@@ -447,7 +457,6 @@ public partial class PlayerController : CharacterBody3D
 		if (!NearbyInteractables.Contains(interactable))
 		{
 			NearbyInteractables.Add(interactable);
-			UpdateTargetInteractable();
 		}
 	}
 
@@ -459,32 +468,200 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		NearbyInteractables.Remove(interactable);
-		UpdateTargetInteractable();
 	}
 
-	private void UpdateTargetInteractable()
+	// Наведение по прицелу (центр экрана). Сначала прямой луч из камеры; если он не
+	// попал в интерактив — «довинчиваем» на ближайший к центру доступный предмет в
+	// пределах угла и прямой видимости (мелкие предметы иначе не поймать прицелом).
+	// Вызывается каждый физический кадр для живого локального игрока.
+	private void UpdateAimTarget()
 	{
-		_targetInteractable = null;
-		float closest = float.MaxValue;
+		Vector3 from = _camera.GlobalPosition;
+		Vector3 dir = -_camera.GlobalTransform.Basis.Z;
+		Godot.Collections.Array<Rid> exclude = BuildAimExcludes();
 
-		for (int i = NearbyInteractables.Count - 1; i >= 0; i--)
+		Interaction.IInteractable target = RaycastInteractable(from, dir, exclude)
+			?? FindAimedItem(from, dir, exclude);
+
+		// Уже подобранный (спрятанный) предмет не считаем целью, даже если луч успел
+		// зацепить его до отключения коллизии — иначе подсказка «Подобрать…» зависает.
+		if (target is Inv.WorldItem { IsAvailable: false })
 		{
-			Interaction.IInteractable interactable = NearbyInteractables[i];
+			target = null;
+		}
 
-			// Объект мог быть удалён из мира (например, подобранный предмет).
-			if (interactable is Node node && !GodotObject.IsInstanceValid(node))
+		if (target != null && !target.CanInteract(this))
+		{
+			target = null;
+		}
+
+		SetAimTarget(target);
+	}
+
+	// Исключения для луча наведения: сам игрок и любой удерживаемый предмет в руке
+	// (напр., экипированный топор — это WorldItem с коллизией прямо перед камерой,
+	// иначе прицел «наводился» бы на собственный предмет и перекрывал обзор).
+	private Godot.Collections.Array<Rid> BuildAimExcludes()
+	{
+		var exclude = new Godot.Collections.Array<Rid> { GetRid() };
+		if (_hand != null)
+		{
+			foreach (Node child in _hand.GetChildren())
 			{
-				NearbyInteractables.RemoveAt(i);
+				CollectCollisionRids(child, exclude);
+			}
+		}
+		return exclude;
+	}
+
+	private static void CollectCollisionRids(Node node, Godot.Collections.Array<Rid> into)
+	{
+		if (node is CollisionObject3D collider)
+		{
+			into.Add(collider.GetRid());
+		}
+		foreach (Node child in node.GetChildren())
+		{
+			CollectCollisionRids(child, into);
+		}
+	}
+
+	// Прямой луч из камеры до Range. Ловит и тела (двери/барьеры), и области
+	// (предметы, зоны взаимодействия) — поднимаемся по родителям до IInteractable.
+	private Interaction.IInteractable RaycastInteractable(Vector3 from, Vector3 dir,
+		Godot.Collections.Array<Rid> exclude)
+	{
+		var query = PhysicsRayQueryParameters3D.Create(from, from + dir * G.Interact.Range);
+		query.Exclude = exclude;
+		query.CollideWithAreas = true;
+		query.CollideWithBodies = true;
+
+		Godot.Collections.Dictionary hit = GetWorld3D().DirectSpaceState.IntersectRay(query);
+		if (hit.Count == 0)
+		{
+			return null;
+		}
+
+		return FindInteractable(hit["collider"].As<Node>());
+	}
+
+	private static Interaction.IInteractable FindInteractable(Node node)
+	{
+		while (node != null)
+		{
+			if (node is Interaction.IInteractable interactable)
+			{
+				return interactable;
+			}
+			node = node.GetParent();
+		}
+		return null;
+	}
+
+	// Ближайший к центру прицела доступный предмет в пределах угла, дальности и
+	// прямой видимости. «Довинчивание» прицела для мелких предметов.
+	private Interaction.IInteractable FindAimedItem(Vector3 from, Vector3 dir,
+		Godot.Collections.Array<Rid> exclude)
+	{
+		float bestDot = Mathf.Cos(Mathf.DegToRad(G.Interact.AimAssistDegrees));
+		float rangeSq = G.Interact.Range * G.Interact.Range;
+		Inv.WorldItem best = null;
+
+		foreach (Inv.WorldItem item in Inv.WorldItem.All)
+		{
+			if (!item.IsAvailable)
+			{
 				continue;
 			}
 
-			float distance = interactable.GlobalPosition.DistanceSquaredTo(GlobalPosition);
-			if (distance < closest)
+			Vector3 toItem = item.GlobalPosition + Vector3.Up * 0.3f - from;
+			float distSq = toItem.LengthSquared();
+			if (distSq > rangeSq || distSq < 0.0001f)
 			{
-				closest = distance;
-				_targetInteractable = interactable;
+				continue;
 			}
+
+			float dist = Mathf.Sqrt(distSq);
+			Vector3 toDir = toItem / dist;
+			if (dir.Dot(toDir) < bestDot)
+			{
+				continue;
+			}
+
+			// Прямая видимость: между камерой и предметом не должно быть стен/дверей
+			// (луч по телам, без областей — предметы-области его не перекрывают).
+			var los = PhysicsRayQueryParameters3D.Create(from, from + toDir * dist);
+			los.Exclude = exclude;
+			if (GetWorld3D().DirectSpaceState.IntersectRay(los).Count > 0)
+			{
+				continue;
+			}
+
+			bestDot = dir.Dot(toDir);
+			best = item;
 		}
+
+		return best;
+	}
+
+	// Ставит новую цель наведения и переносит подсветку-контур на неё.
+	private void SetAimTarget(Interaction.IInteractable target)
+	{
+		if (target is Node node && !GodotObject.IsInstanceValid(node))
+		{
+			target = null;
+		}
+
+		_targetInteractable = target;
+
+		Node3D targetNode = target as Node3D;
+		if (ReferenceEquals(targetNode, _highlightedNode))
+		{
+			return;
+		}
+
+		if (_highlightedNode != null && GodotObject.IsInstanceValid(_highlightedNode))
+		{
+			ApplyOverlay(_highlightedNode, null);
+		}
+
+		_highlightedNode = targetNode;
+
+		if (_highlightedNode != null)
+		{
+			ApplyOverlay(_highlightedNode, GetTargetHighlight());
+		}
+	}
+
+	// Снимает наведение и подсветку (мышь освобождена, нокаут, выход из игры).
+	private void ClearAimTarget()
+	{
+		_targetInteractable = null;
+
+		if (_highlightedNode != null && GodotObject.IsInstanceValid(_highlightedNode))
+		{
+			ApplyOverlay(_highlightedNode, null);
+		}
+		_highlightedNode = null;
+	}
+
+	// Материал-подсветка наведённого предмета/объекта (жёлтое свечение поверх меша).
+	private static StandardMaterial3D GetTargetHighlight()
+	{
+		if (_targetHighlight == null)
+		{
+			_targetHighlight = new StandardMaterial3D
+			{
+				AlbedoColor = new Color(1f, 0.9f, 0.3f, 0.35f),
+				Transparency = BaseMaterial3D.TransparencyEnum.Alpha,
+				ShadingMode = BaseMaterial3D.ShadingModeEnum.Unshaded,
+				EmissionEnabled = true,
+				Emission = new Color(1f, 0.8f, 0.2f),
+				EmissionEnergyMultiplier = 0.8f,
+			};
+		}
+
+		return _targetHighlight;
 	}
 
 	// Текущая подсказка взаимодействия для HUD (клиент).
@@ -896,6 +1073,7 @@ public partial class PlayerController : CharacterBody3D
 
 		if (Input.GetMouseMode() != Input.MouseModeEnum.Captured)
 		{
+			ClearAimTarget();
 			return;
 		}
 
@@ -903,6 +1081,7 @@ public partial class PlayerController : CharacterBody3D
 		// (затухание тряски от последнего удара) продолжаем обновлять.
 		if (VitalState != PlayerVitalState.Alive)
 		{
+			ClearAimTarget();
 			_cameraEffects?.Update(Vector3.Zero, IsOnFloor(), Speed, (float)delta);
 			return;
 		}
@@ -931,6 +1110,9 @@ public partial class PlayerController : CharacterBody3D
 
 		UpdateRevive((float)delta);
 		UpdateSelfHeal((float)delta);
+
+		// Наведение прицела на интерактив (подсветка + подсказка + цель для F).
+		UpdateAimTarget();
 	}
 
 	// Подъём поверженного союзника удержанием F. Прогресс копится, пока рядом

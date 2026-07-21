@@ -98,6 +98,7 @@ public partial class GameFlow : Node
 		// Подсказка, таймер, здоровье и хотбар показываются только в самой игре.
 		bool inGameplay = GameState.CurrentPhase == GamePhase.Gameplay;
 		_ui.ShowHotbar(inGameplay);
+		_ui.ShowCrosshair(inGameplay);
 
 		// Рядом поверженный союзник — подсказка «удерживайте F» и прогресс-бар
 		// подъёма; иначе — обычная подсказка взаимодействия.

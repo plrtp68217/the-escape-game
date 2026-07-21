@@ -26,6 +26,7 @@ public partial class UIManager : Node
     private Label _healthLabel;
     private Label _staminaLabel;
     private Label _abilityLabel;
+    private Control _crosshair;
 
     public event System.Action HostRequested;
     public event System.Action<string> JoinRequested;
@@ -117,6 +118,11 @@ public partial class UIManager : Node
         _hotbar.Visible = visible;
     }
 
+    public void ShowCrosshair(bool visible)
+    {
+        _crosshair.Visible = visible;
+    }
+
     public void SetTip(string text)
     {
         _tipLabel.Text = text;
@@ -191,5 +197,6 @@ public partial class UIManager : Node
         _healthLabel = _screenManager.GetNode<Label>("HealthLabel");
         _staminaLabel = _screenManager.GetNode<Label>("StaminaLabel");
         _abilityLabel = _screenManager.GetNode<Label>("AbilityLabel");
+        _crosshair = _screenManager.GetNode<Control>("Crosshair");
     }
 }

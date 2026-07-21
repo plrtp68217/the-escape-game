@@ -26,6 +26,11 @@ public partial class WorldItem : Area3D, IInteractable
     private int _initialCount = 1;
     private bool _active = true;
 
+    // Доступен ли предмет для наведения/подбора (виден и не подобран). Нужен для
+    // прицельного подбора: локальный игрок перебирает WorldItem.All и берёт тот,
+    // на который смотрит (см. PlayerController.FindAimedItem).
+    public bool IsAvailable => _active && Count > 0;
+
     public override void _Ready()
     {
         // В сценах предметов Count иногда сериализован как null → грузится нулём,
@@ -71,7 +76,12 @@ public partial class WorldItem : Area3D, IInteractable
         }
     }
 
-    public string GetPrompt(PlayerController player) => "Подобрать";
+    public string GetPrompt(PlayerController player)
+    {
+        InventoryItem data = ItemDatabase.Get(ItemId);
+        string name = data?.Name ?? "предмет";
+        return $"Подобрать {name} [F]";
+    }
 
     public bool CanInteract(PlayerController player) => true;
 
@@ -114,6 +124,17 @@ public partial class WorldItem : Area3D, IInteractable
         Visible = active;
         Monitoring = active;
         Monitorable = active;
+
+        // Коллизию тоже выключаем: intersect_ray видит шейпы независимо от monitoring,
+        // и без этого луч прицела продолжал «попадать» в уже подобранный (спрятанный)
+        // предмет — подсказка «Подобрать…» оставалась висеть после подбора.
+        foreach (Node child in GetChildren())
+        {
+            if (child is CollisionShape3D shape)
+            {
+                shape.Disabled = !active;
+            }
+        }
     }
 
     // Только сервер: вернуть предмет к исходному состоянию при рематче — исходное
