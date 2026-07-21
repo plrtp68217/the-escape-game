@@ -104,7 +104,7 @@ public partial class InventoryRelay : Node
     private const string DroppedItemsPath = "/root/Main/DroppedItems";
 
     // Монотонный счётчик имён выброшенных предметов (только на сервере) — чтобы
-    // имена узлов совпадали на всех пирах и работал путь для RemoveWorldItem.
+    // имена узлов совпадали на всех пирах и работал путь для SetWorldItemActive.
     private int _dropCounter;
 
     // Клиент просит сервер выбросить содержимое слота. Позицию считает клиент
@@ -145,7 +145,7 @@ public partial class InventoryRelay : Node
     }
 
     // Сервер: создать выброшенный предмет в мире у всех пиров (ручная репликация,
-    // как и удаление через RemoveWorldItem — так пути узлов совпадают везде).
+    // как и показ/скрытие через SetWorldItemActive — так пути узлов совпадают везде).
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void SpawnWorldItem(string itemId, int count, Vector3 position, string nodeName)
     {
@@ -174,12 +174,13 @@ public partial class InventoryRelay : Node
         ModelBounds.ClampVisibleSize(item, G.DropMinVisibleSize, G.DropMaxVisibleSize);
     }
 
-    // Сервер сообщает всем, что предмет в мире нужно удалить.
+    // Сервер сообщает всем показать/спрятать предмет в мире (подбор/рематч). Узел
+    // не удаляем — так его можно вернуть новым раундом (см. WorldItem.ResetForRound).
     [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void RemoveWorldItem(string itemPath)
+    public void SetWorldItemActive(string itemPath, bool active)
     {
         WorldItem item = GetNodeOrNull<WorldItem>(itemPath);
-        item?.QueueFree();
+        item?.SetActive(active);
     }
 
     // Сервер: убрать все выброшенные предметы у всех пиров. Вызывается при

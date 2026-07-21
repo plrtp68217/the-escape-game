@@ -258,6 +258,17 @@ public partial class GameFlow : Node
 	{
 		GameState.SetPhase(GamePhase.Gameplay);
 		ApplyRoles();
+
+		// Стартовый набор по роли выдаёт сервер всем игрокам (единый путь для
+		// первого старта и рематча). Роль берётся из ростера лобби внутри метода.
+		if (Multiplayer.IsServer())
+		{
+			foreach (PlayerController player in PlayerController.AllPlayers.Values)
+			{
+				player.GiveRoleLoadout();
+			}
+		}
+
 		RoundManager.Instance.StartRound();
 		Combat.CombatRelay.Instance.ResetAll();
 		_ui.ShowTip(true);
@@ -301,9 +312,12 @@ public partial class GameFlow : Node
 			barrier.ResetState();
 		}
 
-		foreach (PlayerController player in PlayerController.AllPlayers.Values)
+		// Возвращаем подобранные за прошлый раунд мировые предметы (инструменты,
+		// расходники) на места — иначе на 2-м раунде карта пустая. Инвентари
+		// игроков переназначаются по роли в OnGameStarted (GiveRoleLoadout).
+		foreach (Inventory.WorldItem item in Inventory.WorldItem.All)
 		{
-			player.ResetForRound();
+			item.ResetForRound();
 		}
 
 		// Убираем брошенные за прошлый раунд предметы, иначе они копятся на карте.

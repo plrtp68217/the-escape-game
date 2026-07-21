@@ -9,6 +9,9 @@
 [ext_resource type="PackedScene" path="res://scenes/items/cipher.tscn" id="7_cipher"]
 [ext_resource type="PackedScene" path="res://scenes/items/shovel.tscn" id="8_shovel"]
 [ext_resource type="PackedScene" path="res://scenes/items/explosive.tscn" id="9_explosive"]
+[ext_resource type="PackedScene" path="res://scenes/items/health.tscn" id="10_health"]
+[ext_resource type="PackedScene" path="res://scenes/items/pill.tscn" id="11_pill"]
+[ext_resource type="PackedScene" path="res://scenes/items/syringe.tscn" id="12_syringe"]
 
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(72, 2, 84)
@@ -365,4 +368,49 @@ font_size = 40
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 6)
 billboard = 1
 text = "Шифр"
+font_size = 40
+
+[node name="Health0" parent="." instance=ExtResource("10_health")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 1, 18)
+
+[node name="Health1" parent="." instance=ExtResource("10_health")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 1, 18)
+
+[node name="Pill0" parent="." instance=ExtResource("11_pill")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -18)
+
+[node name="Pill1" parent="." instance=ExtResource("11_pill")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 1, 2)
+
+[node name="Syringe0" parent="." instance=ExtResource("12_syringe")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 1, 2)
+
+[node name="LabelHealth0" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18, 2, 18)
+billboard = 1
+text = "Аптечка"
+font_size = 40
+
+[node name="LabelHealth1" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 2, 18)
+billboard = 1
+text = "Аптечка"
+font_size = 40
+
+[node name="LabelPill0" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -18)
+billboard = 1
+text = "Таблетка"
+font_size = 40
+
+[node name="LabelPill1" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 2, 2)
+billboard = 1
+text = "Таблетка"
+font_size = 40
+
+[node name="LabelSyringe0" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 2, 2)
+billboard = 1
+text = "Шприц"
 font_size = 40

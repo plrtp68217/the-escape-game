@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Godot;
 using EscapeGame.Interaction;
 
@@ -9,11 +10,21 @@ namespace EscapeGame.Inventory;
 /// </summary>
 public partial class WorldItem : Area3D, IInteractable
 {
+    // Все предметы в мире — по образцу CellDoor.All / Barrier.All. Нужен, чтобы
+    // при рематче вернуть подобранные предметы на места (сцена не перезагружается).
+    public static readonly HashSet<WorldItem> All = new();
+
     [Export]
     public string ItemId { get; set; } = string.Empty;
 
     [Export]
     public int Count { get; set; } = 1;
+
+    // Исходное количество (для восстановления при рематче) и «активность»: подобранный
+    // предмет не удаляется, а прячется и отключает подбор, чтобы его можно было
+    // вернуть новым раундом без пересоздания узла (пути узлов остаются валидны).
+    private int _initialCount = 1;
+    private bool _active = true;
 
     public override void _Ready()
     {
@@ -24,8 +35,22 @@ public partial class WorldItem : Area3D, IInteractable
             Count = 1;
         }
 
+        _initialCount = Count;
+        All.Add(this);
+
         BodyEntered += OnBodyEntered;
         BodyExited += OnBodyExited;
+
+        // Нормализуем видимый размер ЛЮБОГО предмета в мире (не только выброшенного):
+        // разложенные в сцене пикапы идут в нативном масштабе GLB, из-за чего, напр.,
+        // пилюля выходит гигантской. ClampVisibleSize идемпотентен — предметы, уже
+        // попадающие в диапазон, не трогает (тот же зажим, что и при выбросе).
+        ModelBounds.ClampVisibleSize(this, G.DropMinVisibleSize, G.DropMaxVisibleSize);
+    }
+
+    public override void _ExitTree()
+    {
+        All.Remove(this);
     }
 
     private void OnBodyEntered(Node3D body)
@@ -51,9 +76,14 @@ public partial class WorldItem : Area3D, IInteractable
     public bool CanInteract(PlayerController player) => true;
 
     // Только сервер (вызывается из InteractionRelay). Кладёт предмет в инвентарь,
-    // рассылает новое состояние и удаляет предмет из мира, если он закончился.
+    // рассылает новое состояние и прячет предмет из мира, если он закончился.
     public void Interact(PlayerController player)
     {
+        if (!_active)
+        {
+            return;
+        }
+
         InventoryItem data = ItemDatabase.Get(ItemId);
         if (data == null)
         {
@@ -71,7 +101,31 @@ public partial class WorldItem : Area3D, IInteractable
 
         if (Count <= 0)
         {
-            InventoryRelay.Instance?.Rpc(nameof(InventoryRelay.RemoveWorldItem), GetPath().ToString());
+            // Не удаляем, а прячем — чтобы вернуть предмет при рематче (ResetForRound).
+            InventoryRelay.Instance?.Rpc(nameof(InventoryRelay.SetWorldItemActive), GetPath().ToString(), false);
         }
+    }
+
+    // Показывает/прячет предмет на всех пирах (вызывается из InventoryRelay).
+    // Спрятанный не виден и не ловит вход в область (нельзя подобрать).
+    public void SetActive(bool active)
+    {
+        _active = active;
+        Visible = active;
+        Monitoring = active;
+        Monitorable = active;
+    }
+
+    // Только сервер: вернуть предмет к исходному состоянию при рематче — исходное
+    // количество и показ на всех пирах.
+    public void ResetForRound()
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        Count = _initialCount;
+        InventoryRelay.Instance?.Rpc(nameof(InventoryRelay.SetWorldItemActive), GetPath().ToString(), true);
     }
 }

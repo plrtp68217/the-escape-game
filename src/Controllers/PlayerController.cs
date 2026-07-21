@@ -182,7 +182,8 @@ public partial class PlayerController : CharacterBody3D
 
 		if (Multiplayer.IsServer())
 		{
-			SeedStartingInventory();
+			// Стартовый набор выдаётся по роли в начале раунда (GiveRoleLoadout):
+			// на спавне в лобби роль ещё не назначена. Пока рассылаем пустой инвентарь.
 			Inv.InventoryRelay.Instance?.BroadcastInventory(this);
 		}
 		else if (IsMultiplayerAuthority())
@@ -194,23 +195,11 @@ public partial class PlayerController : CharacterBody3D
 		}
 	}
 
-	// Стартовый набор игрока. Только сервер (изменяет авторитетный инвентарь).
-	private void SeedStartingInventory()
-	{
-		// Тестовое наполнение инвентаря для проверки UI.
-		Inventory.AddItem(Inv.ItemDatabase.Get("axe"), 1);
-		Inventory.AddItem(Inv.ItemDatabase.Get("health"), 3);
-		Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 2);
-
-		// Сразу экипируем первый занятый слот, чтобы на старте раунда предмет был в
-		// руке И подсвечивался как выбранный в хотбаре (иначе экипировка = -1 и
-		// ничего не выделено). Индекс уедет всем клиентам через BroadcastInventory.
-		Inventory.TryEquip(0);
-	}
-
-	// Сброс инвентаря к стартовому набору при перезапуске раунда. Только сервер;
-	// новое состояние рассылается всем через InventoryRelay.
-	public void ResetForRound()
+	// Выдаёт стартовый набор по назначенной роли (только сервер). Роль берём из
+	// авторитетного ростера лобби, а не из PlayerController.Role — чтобы не зависеть
+	// от порядка применения ролей на сервере. Вызывается в начале КАЖДОГО раунда
+	// (первый старт и рематч) для всех игроков; экипирует первый слот.
+	public void GiveRoleLoadout()
 	{
 		if (!Multiplayer.IsServer())
 		{
@@ -218,7 +207,32 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		Inventory.Clear();
-		SeedStartingInventory();
+
+		PlayerRole role = Role;
+		if (LobbyManager.Instance != null
+			&& LobbyManager.Instance.Players.TryGetValue(PlayerId, out LobbyPlayerInfo info))
+		{
+			role = info.Role;
+		}
+
+		// Набор по роли. Расходники и инструменты барьеров обе стороны ищут в мире —
+		// бесплатной выдачи больше нет (задел на будущую веху баланса — здесь удобно
+		// разнести стартовые предметы сторон).
+		switch (role)
+		{
+			case PlayerRole.Warden:
+				// Надзиратель: топор — оружие (нужен, чтобы бить заключённых).
+				Inventory.AddItem(Inv.ItemDatabase.Get(G.Door.AxeItemId), 1);
+				break;
+			default:
+				// Заключённый: топор — только чтобы выбить дверь камеры (по игрокам
+				// заключённый топором не бьёт, см. TryAttack).
+				Inventory.AddItem(Inv.ItemDatabase.Get(G.Door.AxeItemId), 1);
+				break;
+		}
+
+		// Экипируем первый слот: предмет сразу в руке и подсвечен в хотбаре.
+		Inventory.TryEquip(0);
 		Inv.InventoryRelay.Instance?.BroadcastInventory(this);
 	}
 
