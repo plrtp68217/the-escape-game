@@ -13,17 +13,17 @@
 [sub_resource type="BoxShape3D" id="ground_shape"]
 size = Vector3(72, 2, 84)
 
-[sub_resource type="BoxMesh" id="ground_mesh"]
-size = Vector3(72, 2, 84)
-
 [sub_resource type="StandardMaterial3D" id="mat_ground"]
 albedo_color = Color(0.22, 0.23, 0.26, 1)
 
-[sub_resource type="StandardMaterial3D" id="mat_wall"]
-albedo_color = Color(0.5, 0.5, 0.55, 1)
+[sub_resource type="BoxMesh" id="ground_mesh"]
+size = Vector3(72, 2, 84)
 
 [sub_resource type="BoxShape3D" id="bnd_ns"]
 size = Vector3(64, 4, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="mat_wall"]
+albedo_color = Color(0.5, 0.5, 0.55, 1)
 
 [sub_resource type="BoxMesh" id="bnd_ns_mesh"]
 size = Vector3(64, 4, 0.5)
@@ -68,302 +68,300 @@ albedo_color = Color(0.2, 0.9, 0.3, 0.25)
 [sub_resource type="BoxMesh" id="exit_mesh"]
 size = Vector3(56, 3, 8)
 
-[node name="Main" type="Node3D"]
+[node name="Main" type="Node3D" unique_id=756332394]
 script = ExtResource("1_main")
 
-[node name="Ground" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="." unique_id=1274093017]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 6)
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Ground" unique_id=164341341]
 shape = SubResource("ground_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground"]
-mesh = SubResource("ground_mesh")
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Ground" unique_id=430648358]
 material_override = SubResource("mat_ground")
+mesh = SubResource("ground_mesh")
 
-[node name="Players" type="Node3D" parent="."]
+[node name="Players" type="Node3D" parent="." unique_id=1602803640]
 
-[node name="DroppedItems" type="Node3D" parent="."]
+[node name="DroppedItems" type="Node3D" parent="." unique_id=1560108802]
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." unique_id=1116030070]
 _spawnable_scenes = PackedStringArray("uid://cd1e025wlou5a")
 spawn_path = NodePath("../Players")
 
-[node name="DirectionalLightPivot" type="Node3D" parent="."]
+[node name="DirectionalLightPivot" type="Node3D" parent="." unique_id=384685394]
 transform = Transform3D(0.9999847, 1.0574942e-17, 0.005534634, -0.005534634, 1.9106565e-15, 0.9999847, 6.310887e-30, -1, 1.9106853e-15, 0, 13.162506, 6)
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot"]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="DirectionalLightPivot" unique_id=635585062]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.1368684e-13, 62)
 light_indirect_energy = 1.576
 
-[node name="OmniNorth" type="OmniLight3D" parent="."]
+[node name="OmniNorth" type="OmniLight3D" parent="." unique_id=1711249641]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, -20)
-omni_range = 30
+omni_range = 30.0
 
-[node name="OmniCentral" type="OmniLight3D" parent="."]
+[node name="OmniCentral" type="OmniLight3D" parent="." unique_id=32865494]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 6)
-omni_range = 30
+omni_range = 30.0
 
-[node name="OmniSouth" type="OmniLight3D" parent="."]
+[node name="OmniSouth" type="OmniLight3D" parent="." unique_id=300224294]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 32)
-omni_range = 30
+omni_range = 30.0
 
-[node name="BoundaryNorth" type="StaticBody3D" parent="."]
+[node name="BoundaryNorth" type="StaticBody3D" parent="." unique_id=288495391]
 
-[node name="Coll" type="CollisionShape3D" parent="BoundaryNorth"]
+[node name="Coll" type="CollisionShape3D" parent="BoundaryNorth" unique_id=193637909]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -30)
 shape = SubResource("bnd_ns")
 
-[node name="Mesh" type="MeshInstance3D" parent="BoundaryNorth"]
+[node name="Mesh" type="MeshInstance3D" parent="BoundaryNorth" unique_id=1347586148]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -30)
-mesh = SubResource("bnd_ns_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("bnd_ns_mesh")
 
-[node name="BoundarySouth" type="StaticBody3D" parent="."]
+[node name="BoundarySouth" type="StaticBody3D" parent="." unique_id=220878522]
 
-[node name="Coll" type="CollisionShape3D" parent="BoundarySouth"]
+[node name="Coll" type="CollisionShape3D" parent="BoundarySouth" unique_id=1001210216]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 42)
 shape = SubResource("bnd_ns")
 
-[node name="Mesh" type="MeshInstance3D" parent="BoundarySouth"]
+[node name="Mesh" type="MeshInstance3D" parent="BoundarySouth" unique_id=1805069480]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 42)
+material_override = SubResource("mat_wall")
 mesh = SubResource("bnd_ns_mesh")
-material_override = SubResource("mat_wall")
 
-[node name="BoundaryWest" type="StaticBody3D" parent="."]
+[node name="BoundaryWest" type="StaticBody3D" parent="." unique_id=1829437199]
 
-[node name="Coll" type="CollisionShape3D" parent="BoundaryWest"]
+[node name="Coll" type="CollisionShape3D" parent="BoundaryWest" unique_id=1375776127]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 2, 6)
 shape = SubResource("bnd_we")
 
-[node name="Mesh" type="MeshInstance3D" parent="BoundaryWest"]
+[node name="Mesh" type="MeshInstance3D" parent="BoundaryWest" unique_id=1526970259]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -32, 2, 6)
-mesh = SubResource("bnd_we_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("bnd_we_mesh")
 
-[node name="BoundaryEast" type="StaticBody3D" parent="."]
+[node name="BoundaryEast" type="StaticBody3D" parent="." unique_id=667310512]
 
-[node name="Coll" type="CollisionShape3D" parent="BoundaryEast"]
+[node name="Coll" type="CollisionShape3D" parent="BoundaryEast" unique_id=1165943280]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 2, 6)
 shape = SubResource("bnd_we")
 
-[node name="Mesh" type="MeshInstance3D" parent="BoundaryEast"]
+[node name="Mesh" type="MeshInstance3D" parent="BoundaryEast" unique_id=837347168]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 2, 6)
+material_override = SubResource("mat_wall")
 mesh = SubResource("bnd_we_mesh")
-material_override = SubResource("mat_wall")
 
-[node name="SeparatorNC" type="StaticBody3D" parent="."]
+[node name="SeparatorNC" type="StaticBody3D" parent="." unique_id=821052826]
 
-[node name="S0Coll" type="CollisionShape3D" parent="SeparatorNC"]
+[node name="S0Coll" type="CollisionShape3D" parent="SeparatorNC" unique_id=950936136]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.5, 2, -10)
 shape = SubResource("h15")
 
-[node name="S0Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+[node name="S0Mesh" type="MeshInstance3D" parent="SeparatorNC" unique_id=291325047]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.5, 2, -10)
+material_override = SubResource("mat_wall")
 mesh = SubResource("h15_mesh")
-material_override = SubResource("mat_wall")
 
-[node name="S1Coll" type="CollisionShape3D" parent="SeparatorNC"]
+[node name="S1Coll" type="CollisionShape3D" parent="SeparatorNC" unique_id=1539329791]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, -10)
 shape = SubResource("h14")
 
-[node name="S1Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+[node name="S1Mesh" type="MeshInstance3D" parent="SeparatorNC" unique_id=469723247]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, -10)
-mesh = SubResource("h14_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h14_mesh")
 
-[node name="S2Coll" type="CollisionShape3D" parent="SeparatorNC"]
+[node name="S2Coll" type="CollisionShape3D" parent="SeparatorNC" unique_id=941443395]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, -10)
 shape = SubResource("h14")
 
-[node name="S2Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+[node name="S2Mesh" type="MeshInstance3D" parent="SeparatorNC" unique_id=1188171654]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, -10)
-mesh = SubResource("h14_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h14_mesh")
 
-[node name="S3Coll" type="CollisionShape3D" parent="SeparatorNC"]
+[node name="S3Coll" type="CollisionShape3D" parent="SeparatorNC" unique_id=1968377009]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 2, -10)
 shape = SubResource("h15")
 
-[node name="S3Mesh" type="MeshInstance3D" parent="SeparatorNC"]
+[node name="S3Mesh" type="MeshInstance3D" parent="SeparatorNC" unique_id=966202983]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24.5, 2, -10)
+material_override = SubResource("mat_wall")
 mesh = SubResource("h15_mesh")
-material_override = SubResource("mat_wall")
 
-[node name="GauntletCS" type="StaticBody3D" parent="."]
+[node name="GauntletCS" type="StaticBody3D" parent="." unique_id=1580897847]
 
-[node name="G0Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G0Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=857281224]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.5, 2, 22)
 shape = SubResource("h7")
 
-[node name="G0Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G0Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=1706966868]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -28.5, 2, 22)
+material_override = SubResource("mat_wall")
 mesh = SubResource("h7_mesh")
-material_override = SubResource("mat_wall")
 
-[node name="G1Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G1Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=1057698523]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 2, 22)
 shape = SubResource("h6")
 
-[node name="G1Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G1Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=1228698788]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 2, 22)
-mesh = SubResource("h6_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h6_mesh")
 
-[node name="G2Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G2Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=1846758548]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 22)
 shape = SubResource("h6")
 
-[node name="G2Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G2Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=1295224356]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 22)
-mesh = SubResource("h6_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h6_mesh")
 
-[node name="G3Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G3Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=492604101]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 22)
 shape = SubResource("h6")
 
-[node name="G3Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G3Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=2035011173]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 2, 22)
-mesh = SubResource("h6_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h6_mesh")
 
-[node name="G4Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G4Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=1955470160]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 22)
 shape = SubResource("h6")
 
-[node name="G4Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G4Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=2017534605]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 2, 22)
-mesh = SubResource("h6_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h6_mesh")
 
-[node name="G5Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G5Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=904096718]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 22)
 shape = SubResource("h6")
 
-[node name="G5Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G5Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=793018580]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 22)
-mesh = SubResource("h6_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h6_mesh")
 
-[node name="G6Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G6Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=2053444475]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, 22)
 shape = SubResource("h6")
 
-[node name="G6Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G6Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=855175797]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 20, 2, 22)
-mesh = SubResource("h6_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h6_mesh")
 
-[node name="G7Coll" type="CollisionShape3D" parent="GauntletCS"]
+[node name="G7Coll" type="CollisionShape3D" parent="GauntletCS" unique_id=887012488]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.5, 2, 22)
 shape = SubResource("h7")
 
-[node name="G7Mesh" type="MeshInstance3D" parent="GauntletCS"]
+[node name="G7Mesh" type="MeshInstance3D" parent="GauntletCS" unique_id=1405094958]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28.5, 2, 22)
-mesh = SubResource("h7_mesh")
 material_override = SubResource("mat_wall")
+mesh = SubResource("h7_mesh")
 
-[node name="Cell0" parent="." instance=ExtResource("2_cell")]
+[node name="Cell0" parent="." unique_id=616574480 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0, -22)
 
-[node name="Cell1" parent="." instance=ExtResource("2_cell")]
+[node name="Cell1" parent="." unique_id=1942698973 instance=ExtResource("2_cell")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 24, 0, -22)
 
-[node name="Cell2" parent="." instance=ExtResource("2_cell")]
+[node name="Cell2" parent="." unique_id=194773026 instance=ExtResource("2_cell")]
 transform = Transform3D(0, 0, -1, 0, 1, 0, 1, 0, 0, 0, 0, 14)
 
-[node name="Cell3" parent="." instance=ExtResource("2_cell")]
+[node name="Cell3" parent="." unique_id=1558045066 instance=ExtResource("2_cell")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 0, 10)
 
-[node name="Cell4" parent="." instance=ExtResource("2_cell")]
+[node name="Cell4" parent="." unique_id=485808719 instance=ExtResource("2_cell")]
 transform = Transform3D(-1, 0, 0, 0, 1, 0, 0, 0, -1, 24, 0, 10)
 
-[node name="GateVent0" parent="." instance=ExtResource("3_barrier")]
+[node name="GateVent0" parent="." unique_id=1276522172 instance=ExtResource("3_barrier")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 2, 22)
-Kind = 0
 
-[node name="GateGrate0" parent="." instance=ExtResource("3_barrier")]
+[node name="GateGrate0" parent="." unique_id=1742528412 instance=ExtResource("3_barrier")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 2, 22)
 Kind = 1
 
-[node name="GateCoded0" parent="." instance=ExtResource("3_barrier")]
+[node name="GateCoded0" parent="." unique_id=1534856869 instance=ExtResource("3_barrier")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 2, 22)
 Kind = 2
 
-[node name="GateRubble" parent="." instance=ExtResource("3_barrier")]
+[node name="GateRubble" parent="." unique_id=1506862863 instance=ExtResource("3_barrier")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 22)
 Kind = 3
 
-[node name="GateVent1" parent="." instance=ExtResource("3_barrier")]
+[node name="GateVent1" parent="." unique_id=491793010 instance=ExtResource("3_barrier")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 22)
-Kind = 0
 
-[node name="GateGrate1" parent="." instance=ExtResource("3_barrier")]
+[node name="GateGrate1" parent="." unique_id=710975176 instance=ExtResource("3_barrier")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 2, 22)
 Kind = 1
 
-[node name="GateCoded1" parent="." instance=ExtResource("3_barrier")]
+[node name="GateCoded1" parent="." unique_id=1511204223 instance=ExtResource("3_barrier")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 2, 22)
 Kind = 2
 
-[node name="Screwdriver" parent="." instance=ExtResource("5_screwdriver")]
+[node name="Screwdriver" parent="." unique_id=1739615141 instance=ExtResource("5_screwdriver")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, -26)
 
-[node name="Shovel" parent="." instance=ExtResource("8_shovel")]
+[node name="Shovel" parent="." unique_id=839705143 instance=ExtResource("8_shovel")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 1, -14)
 
-[node name="Explosive" parent="." instance=ExtResource("9_explosive")]
+[node name="Explosive" parent="." unique_id=1535998745 instance=ExtResource("9_explosive")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 1, -14)
 
-[node name="Cutters" parent="." instance=ExtResource("6_cutters")]
+[node name="Cutters" parent="." unique_id=1439322894 instance=ExtResource("6_cutters")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 1, 6)
 
-[node name="Cipher" parent="." instance=ExtResource("7_cipher")]
+[node name="Cipher" parent="." unique_id=1871943931 instance=ExtResource("7_cipher")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 1, 6)
 
-[node name="ExitZone" type="Area3D" parent="."]
+[node name="ExitZone" type="Area3D" parent="." unique_id=1052478060]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 38)
 script = ExtResource("4_exit")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitZone" unique_id=942968694]
 shape = SubResource("exit_shape")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="ExitZone" unique_id=786962802]
 material_override = SubResource("mat_exit")
 mesh = SubResource("exit_mesh")
 
-[node name="Label3D" type="Label3D" parent="ExitZone"]
+[node name="Label3D" type="Label3D" parent="ExitZone" unique_id=499735732]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
 billboard = 1
 text = "ВЫХОД"
 font_size = 80
 
-[node name="LabelScrewdriver" type="Label3D" parent="."]
+[node name="LabelScrewdriver" type="Label3D" parent="." unique_id=1066857182]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -26)
 billboard = 1
 text = "Отвёртка"
 font_size = 40
 
-[node name="LabelShovel" type="Label3D" parent="."]
+[node name="LabelShovel" type="Label3D" parent="." unique_id=2017519757]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 2, -14)
 billboard = 1
 text = "Лопата"
 font_size = 40
 
-[node name="LabelExplosive" type="Label3D" parent="."]
+[node name="LabelExplosive" type="Label3D" parent="." unique_id=2106606641]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 2, -14)
 billboard = 1
 text = "Взрывчатка"
 font_size = 40
 
-[node name="LabelCutters" type="Label3D" parent="."]
+[node name="LabelCutters" type="Label3D" parent="." unique_id=1768031100]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 2, 6)
 billboard = 1
 text = "Кусачки"
 font_size = 40
 
-[node name="LabelCipher" type="Label3D" parent="."]
+[node name="LabelCipher" type="Label3D" parent="." unique_id=1657746318]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 2, 6)
 billboard = 1
 text = "Шифр"

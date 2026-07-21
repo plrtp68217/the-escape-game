@@ -14,6 +14,9 @@ public partial class LobbyMenu : Control
 
 	private bool _isReady;
 
+	// Локальный IPv4 хоста для шаринга (Веха 10). Считается один раз лениво.
+	private string _hostAddress;
+
 	public event Action<bool> ReadyToggled;
 	public event Action StartRequested;
 	public event Action LeaveRequested;
@@ -98,15 +101,52 @@ public partial class LobbyMenu : Control
 		{
 			_startButton.Disabled = false;
 			bool canStart = LobbyManager.Instance.CanStartGame();
-			_statusLabel.Text = canStart
+			string status = canStart
 				? "Все готовы. Можно начинать."
 				: "Хост может начать игру в любой момент";
+
+			// Подсказываем хосту его адрес — друг в той же сети вводит его в поле IP.
+			string ip = GetHostAddress();
+			if (!string.IsNullOrEmpty(ip))
+			{
+				status += $"\nАдрес для друзей: {ip}:{G.Port}";
+			}
+
+			_statusLabel.Text = status;
 		}
 		else
 		{
 			_startButton.Visible = false;
 			_statusLabel.Text = "";
 		}
+	}
+
+	// Первый подходящий локальный IPv4-адрес хоста: не loopback (127.*) и не
+	// link-local (169.254.*). Пустая строка, если такого нет.
+	private string GetHostAddress()
+	{
+		if (_hostAddress != null)
+		{
+			return _hostAddress;
+		}
+
+		_hostAddress = string.Empty;
+		foreach (string addr in IP.GetLocalAddresses())
+		{
+			if (!addr.Contains('.') || addr.Contains(':'))
+			{
+				continue; // не IPv4
+			}
+			if (addr.StartsWith("127.") || addr.StartsWith("169.254."))
+			{
+				continue;
+			}
+
+			_hostAddress = addr;
+			break;
+		}
+
+		return _hostAddress;
 	}
 
 	public void ResetState()

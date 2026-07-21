@@ -12,6 +12,20 @@ public static class G
     public const int MaxPlayers = 8;
     public const string DefaultAddress = "127.0.0.1";
 
+    // Сетевое сглаживание (Веха 10). Позиция/поворот удалённых игроков приходят
+    // сетевыми тиками (реже кадров) — без интерполяции реплики «дёргаются».
+    public static class Net
+    {
+        // Скорость, с которой реплика догоняет сетевую позицию: больше — резче
+        // (меньше «резины»), меньше — плавнее (но заметнее отставание).
+        public const float InterpolationRate = 18f;
+
+        // Порог «телепорта»: если сетевая позиция дальше этого (м), не
+        // интерполируем через всю карту, а переносим мгновенно (спавн по
+        // камерам в начале раунда, рематч).
+        public const float SnapDistance = 3f;
+    }
+
     // Player movement defaults
     public const float Speed = 10f;
     public const float MoveAcceleration = 80f;

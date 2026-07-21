@@ -295,6 +295,9 @@ public partial class GameFlow : Node
 			player.ResetForRound();
 		}
 
+		// Убираем брошенные за прошлый раунд предметы, иначе они копятся на карте.
+		Inventory.InventoryRelay.Instance?.BroadcastClearWorldItems();
+
 		LobbyManager.Instance.StartRematch();
 	}
 
@@ -316,6 +319,9 @@ public partial class GameFlow : Node
 		local.GlobalPosition = ComputeSpawn(local.PlayerId, localInfo.Role);
 		// Гасим остаточную скорость, чтобы после телепорта на спавн игрока не несло.
 		local.Velocity = Vector3.Zero;
+		// Сразу публикуем новую позицию как сетевую цель: у остальных реплика
+		// «перепрыгнет» на спавн (снап по порогу), а не поедет через всю карту.
+		local.PublishNetTransform();
 		local.ResetAbilities();
 
 		bool isWarden = localInfo.Role == PlayerRole.Warden;

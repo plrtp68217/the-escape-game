@@ -36,6 +36,17 @@ public partial class PlayerController : CharacterBody3D
 	[Export]
 	public int PlayerId { get; set; } = 1;
 
+	// Сетевые «цели» движения (Веха 10). Authority каждый физический кадр пишет
+	// сюда свою позицию/поворот, MultiplayerSynchronizer рассылает их всем, а
+	// удалённые реплики плавно интерполируются к ним (см. _Process). Раньше
+	// синхронизировались сами position/rotation в режиме «Always» — реплики
+	// телепортировались по тикам и заметно дёргались.
+	[Export]
+	public Vector3 NetPosition { get; set; }
+
+	[Export]
+	public float NetRotationY { get; set; }
+
 	public static PlayerController LocalPlayer { get; private set; }
 	public static readonly Dictionary<long, PlayerController> AllPlayers = new();
 
@@ -150,6 +161,11 @@ public partial class PlayerController : CharacterBody3D
 		// PlayerId и authority уже выставлены в _EnterTree, поэтому здесь всё
 		// корректно: ключ AllPlayers, роль по ростеру и IsMultiplayerAuthority().
 		AllPlayers[PlayerId] = this;
+
+		// Сетевые цели интерполяции = текущий трансформ, иначе удалённая реплика
+		// «поехала» бы к нулю, пока не придёт первый синк.
+		NetPosition = Position;
+		NetRotationY = Rotation.Y;
 
 		// Модель роли игрок применяет сам — при спавне и при каждом обновлении
 		// ростера, поэтому она верна независимо от порядка спавна и синка ролей.
@@ -780,6 +796,28 @@ public partial class PlayerController : CharacterBody3D
 		}
 	}
 
+	// Интерполяция удалённых реплик (Веха 10). Локального игрока двигает физика,
+	// поэтому его здесь не трогаем — только чужих. Большой скачок (телепорт на
+	// спавн/рематч) переносим мгновенно, обычное движение — плавно догоняем.
+	public override void _Process(double delta)
+	{
+		if (Multiplayer.MultiplayerPeer == null || IsMultiplayerAuthority())
+		{
+			return;
+		}
+
+		if (Position.DistanceSquaredTo(NetPosition) > G.Net.SnapDistance * G.Net.SnapDistance)
+		{
+			Position = NetPosition;
+			Rotation = new Vector3(0f, NetRotationY, 0f);
+			return;
+		}
+
+		float weight = 1f - Mathf.Exp(-G.Net.InterpolationRate * (float)delta);
+		Position = Position.Lerp(NetPosition, weight);
+		Rotation = new Vector3(0f, Mathf.LerpAngle(Rotation.Y, NetRotationY, weight), 0f);
+	}
+
 	public override void _PhysicsProcess(double delta)
 	{
 		if (
@@ -816,6 +854,9 @@ public partial class PlayerController : CharacterBody3D
 
 		Velocity = _targetVelocity;
 		MoveAndSlide();
+
+		// Публикуем трансформ для реплик: удалённые пиры интерполируют к нему.
+		PublishNetTransform();
 
 		_cameraEffects?.Update(_targetVelocity, IsOnFloor(), Speed, (float)delta);
 
@@ -895,6 +936,15 @@ public partial class PlayerController : CharacterBody3D
 		}
 
 		return best;
+	}
+
+	// Обновляет сетевые цели своим текущим трансформом. Вызывается каждый
+	// физический кадр (движение) и после телепорта на спавн/рематч — иначе
+	// реплика на других пирах «поехала» бы к старой позиции до первого синка.
+	public void PublishNetTransform()
+	{
+		NetPosition = Position;
+		NetRotationY = Rotation.Y;
 	}
 
 	private Vector3 ReadMovementInput()

@@ -26,6 +26,9 @@ public partial class RoundManager : Node
     public override void _Ready()
     {
         Instance = this;
+
+        // Выход игрока посреди раунда может изменить исход (см. OnPeerDisconnected).
+        Multiplayer.PeerDisconnected += OnPeerDisconnected;
     }
 
     // Вызывается на всех пирах при старте игры. Таймер тикает только на сервере.
@@ -106,7 +109,13 @@ public partial class RoundManager : Node
         }
 
         _escaped.Add(prisonerId);
+        CheckEscapeComplete();
+    }
 
+    // Победа заключённых, когда все ныне числящиеся заключённые сбежали. Счёт
+    // берётся из ростера, поэтому вышедшие из игры заключённые не «держат» раунд.
+    private void CheckEscapeComplete()
+    {
         int prisonerCount = LobbyManager.Instance.Players.Values
             .Count(p => p.Role == PlayerRole.Prisoner);
 
@@ -114,6 +123,52 @@ public partial class RoundManager : Node
         {
             EndRound(RoundResult.PrisonersWin);
         }
+    }
+
+    // Игрок отключился. LobbyManager (тоже слушает это событие) убирает его из
+    // ростера, а узел игрока освобождается отложенно — поэтому пересчёт исхода
+    // откладываем на следующий тик, когда ростер и AllPlayers уже согласованы.
+    private void OnPeerDisconnected(long id)
+    {
+        if (!Multiplayer.IsServer() || !RoundActive)
+        {
+            return;
+        }
+
+        _escaped.Remove(id);
+        CallDeferred(nameof(ReevaluateAfterLeave));
+    }
+
+    // Сервер: пересчёт условий победы после выхода игрока из активного раунда.
+    private void ReevaluateAfterLeave()
+    {
+        if (!Multiplayer.IsServer() || !RoundActive || LobbyManager.Instance == null)
+        {
+            return;
+        }
+
+        var roster = LobbyManager.Instance.Players.Values;
+        bool wardenPresent = roster.Any(p => p.Role == PlayerRole.Warden);
+        int prisonerCount = roster.Count(p => p.Role == PlayerRole.Prisoner);
+
+        // Надзиратель покинул игру — мешать побегу больше некому: победа заключённых.
+        if (!wardenPresent)
+        {
+            EndRound(RoundResult.PrisonersWin);
+            return;
+        }
+
+        // Заключённых не осталось — раунд некому выигрывать побегом: победа надзирателя.
+        if (prisonerCount == 0)
+        {
+            EndRound(RoundResult.WardenWin);
+            return;
+        }
+
+        // Иначе вышел один из заключённых — оставшиеся могли уже все сбежать
+        // или быть поверженными.
+        CheckEscapeComplete();
+        CheckAllDowned();
     }
 
     private void EndRound(RoundResult result)

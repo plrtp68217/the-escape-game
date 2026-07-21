@@ -162,6 +162,34 @@ public partial class InventoryRelay : Node
         item?.QueueFree();
     }
 
+    // Сервер: убрать все выброшенные предметы у всех пиров. Вызывается при
+    // рематче (Веха 10), иначе брошенные за раунд предметы копятся на карте.
+    [Rpc(MultiplayerApi.RpcMode.Authority, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void ClearWorldItems()
+    {
+        var container = GetNodeOrNull<Node3D>(DroppedItemsPath);
+        if (container == null)
+        {
+            return;
+        }
+
+        foreach (Node child in container.GetChildren())
+        {
+            child.QueueFree();
+        }
+    }
+
+    // Сервер инициирует очистку выброшенных предметов на всех пирах.
+    public void BroadcastClearWorldItems()
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        Rpc(nameof(ClearWorldItems));
+    }
+
     private static PlayerController FindPlayerController(long playerId)
     {
         return PlayerController.AllPlayers.Values.FirstOrDefault(p => p.PlayerId == playerId);
