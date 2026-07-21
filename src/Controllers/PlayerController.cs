@@ -201,6 +201,11 @@ public partial class PlayerController : CharacterBody3D
 		Inventory.AddItem(Inv.ItemDatabase.Get("axe"), 1);
 		Inventory.AddItem(Inv.ItemDatabase.Get("health"), 3);
 		Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 2);
+
+		// Сразу экипируем первый занятый слот, чтобы на старте раунда предмет был в
+		// руке И подсвечивался как выбранный в хотбаре (иначе экипировка = -1 и
+		// ничего не выделено). Индекс уедет всем клиентам через BroadcastInventory.
+		Inventory.TryEquip(0);
 	}
 
 	// Сброс инвентаря к стартовому набору при перезапуске раунда. Только сервер;
@@ -671,6 +676,36 @@ public partial class PlayerController : CharacterBody3D
 		}
 	}
 
+	// Прямой выбор слота хотбара цифровой клавишей (1..SlotCount). В отличие от
+	// колеса пропускать пустые слоты не нужно — жмём конкретный номер.
+	public void EquipHotbarSlot(int index)
+	{
+		if (!IsMultiplayerAuthority() || VitalState != PlayerVitalState.Alive)
+		{
+			return;
+		}
+
+		int count = Mathf.Min(G.Hotbar.SlotCount, Inventory.Slots.Count);
+		if (index < 0 || index >= count || Inventory.Slots[index].IsEmpty)
+		{
+			return;
+		}
+
+		Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestEquip),
+			(long)PlayerId, index);
+	}
+
+	// Цифровая клавиша → индекс слота хотбара (0-based) или -1. Верхний ряд цифр.
+	private static int HotbarSlotFromKey(Key key) => key switch
+	{
+		Key.Key1 => 0,
+		Key.Key2 => 1,
+		Key.Key3 => 2,
+		Key.Key4 => 3,
+		Key.Key5 => 4,
+		_ => -1,
+	};
+
 	public void RefreshEquippedModel()
 	{
 		Inv.InventorySlot slot = Inventory.EquippedSlot;
@@ -793,6 +828,17 @@ public partial class PlayerController : CharacterBody3D
 			else if (wheel.ButtonIndex == MouseButton.WheelDown)
 			{
 				CycleHotbar(1);
+			}
+		}
+
+		// Цифровые клавиши 1..N выбирают слот хотбара напрямую (в дополнение к колесу).
+		if (@event is InputEventKey { Pressed: true, Echo: false } numberKey
+			&& Input.GetMouseMode() == Input.MouseModeEnum.Captured)
+		{
+			int hotbarSlot = HotbarSlotFromKey(numberKey.Keycode);
+			if (hotbarSlot >= 0)
+			{
+				EquipHotbarSlot(hotbarSlot);
 			}
 		}
 	}

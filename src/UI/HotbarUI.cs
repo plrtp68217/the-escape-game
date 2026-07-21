@@ -45,11 +45,11 @@ public partial class HotbarUI : Control
 		int count = Mathf.Min(G.Hotbar.SlotCount, _inventory.Slots.Count);
 		for (int i = 0; i < count; i++)
 		{
-			_row.AddChild(CreateCell(_inventory.Slots[i], i == _inventory.EquippedSlotIndex));
+			_row.AddChild(CreateCell(_inventory.Slots[i], i, i == _inventory.EquippedSlotIndex));
 		}
 	}
 
-	private Control CreateCell(Inventory.InventorySlot slot, bool equipped)
+	private Control CreateCell(Inventory.InventorySlot slot, int index, bool equipped)
 	{
 		var panel = new PanelContainer
 		{
@@ -72,6 +72,21 @@ public partial class HotbarUI : Control
 
 		var box = new VBoxContainer { MouseFilter = MouseFilterEnum.Ignore };
 		panel.AddChild(box);
+
+		// Номер клавиши быстрого выбора (1..N) в левом верхнем углу ячейки.
+		var keyLabel = new Label
+		{
+			Text = (index + 1).ToString(),
+			MouseFilter = MouseFilterEnum.Ignore,
+		};
+		keyLabel.SetAnchorsPreset(LayoutPreset.TopLeft);
+		keyLabel.OffsetLeft = 4;
+		keyLabel.OffsetTop = 2;
+		keyLabel.AddThemeFontSizeOverride("font_size", 12);
+		keyLabel.AddThemeColorOverride("font_color", new Color(1f, 1f, 1f, 0.7f));
+		keyLabel.AddThemeColorOverride("font_outline_color", Colors.Black);
+		keyLabel.AddThemeConstantOverride("outline_size", 3);
+		panel.AddChild(keyLabel);
 
 		var icon = new TextureRect
 		{

@@ -3,17 +3,24 @@ using Godot;
 namespace EscapeGame.UI;
 
 /// <summary>
-/// Экран инвентаря. Отображает сетку одинаковых ячеек с иконками.
+/// Экран инвентаря. Отображает сетку одинаковых ячеек с иконками. Первые
+/// G.Hotbar.SlotCount слотов (зона хотбара) выделены цветом. Предметы можно
+/// перетаскивать между слотами (drag-and-drop).
 /// </summary>
 public partial class InventoryUI : Control
 {
 	private const int CellSize = 72;
+
+	// Подсветка зоны хотбара (верхний ряд слотов) — синеватый фон и рамка.
+	private static readonly Color HotbarBg = new(0.16f, 0.28f, 0.42f, 0.85f);
+	private static readonly Color HotbarBorder = new(0.4f, 0.65f, 1f);
 
 	private GridContainer _grid;
 	private Inventory.PlayerInventory _inventory;
 
 	public event System.Action<int> SlotSelected;
 	public event System.Action<int> SlotDropRequested;
+	public event System.Action<int, int> SlotMoveRequested;
 
 	public override void _Ready()
 	{
@@ -64,28 +71,38 @@ public partial class InventoryUI : Control
 
 		for (int i = 0; i < _inventory.Slots.Count; i++)
 		{
-			var slot = _inventory.Slots[i];
-			int index = i;
-
-			Control cell = CreateCell(slot, index);
+			Control cell = CreateCell(_inventory.Slots[i], i);
 			_grid.AddChild(cell);
 		}
 	}
 
 	private Control CreateCell(Inventory.InventorySlot slot, int index)
 	{
-		// Ячейка — кнопка (ловит ЛКМ/ПКМ), поверх неё иконка и бейдж количества.
-		// Иконку и число рисуем отдельными узлами, чтобы число было видно ПОВЕРХ
-		// иконки в углу, а не пряталось под ней (как было с ExpandIcon).
-		var button = new Button
+		// Ячейка — кнопка (ловит ЛКМ/ПКМ + drag-and-drop), поверх неё иконка и
+		// бейдж количества. Иконку и число рисуем отдельными узлами, чтобы число
+		// было видно ПОВЕРХ иконки в углу, а не пряталось под ней.
+		bool inHotbar = index < G.Hotbar.SlotCount;
+
+		var button = new InventorySlotCell
 		{
 			CustomMinimumSize = new Vector2(CellSize, CellSize),
+			SlotIndex = index,
+			Empty = slot.IsEmpty,
+			DragIcon = slot.IsEmpty ? null : slot.Item.Icon,
 		};
+
+		// Слоты зоны хотбара визуально отличаются по цвету (см. требование).
+		if (inHotbar)
+		{
+			ApplyHotbarStyle(button);
+		}
+
+		button.Selected += i => SlotSelected?.Invoke(i);
+		button.DropRequested += i => SlotDropRequested?.Invoke(i);
+		button.MoveRequested += (from, to) => SlotMoveRequested?.Invoke(from, to);
 
 		if (slot.IsEmpty)
 		{
-			button.Pressed += () => SlotSelected?.Invoke(index);
-			AttachDropHandler(button, index);
 			return button;
 		}
 
@@ -125,20 +142,89 @@ public partial class InventoryUI : Control
 			button.AddChild(count);
 		}
 
-		button.Pressed += () => SlotSelected?.Invoke(index);
-		AttachDropHandler(button, index);
 		return button;
 	}
 
-	// ПКМ по ячейке — выбросить предмет из этого слота.
-	private void AttachDropHandler(Button button, int index)
+	// Заливает кнопку слота цветом зоны хотбара для всех состояний кнопки.
+	private static void ApplyHotbarStyle(Button button)
 	{
-		button.GuiInput += @event =>
+		foreach (string state in new[] { "normal", "hover", "pressed", "focus" })
 		{
-			if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right })
+			var style = new StyleBoxFlat
 			{
-				SlotDropRequested?.Invoke(index);
-			}
+				BgColor = HotbarBg,
+				BorderColor = HotbarBorder,
+			};
+			style.SetBorderWidthAll(2);
+			style.SetCornerRadiusAll(4);
+			button.AddThemeStyleboxOverride(state, style);
+		}
+	}
+}
+
+/// <summary>
+/// Ячейка инвентаря: кнопка с поддержкой drag-and-drop. Левый клик выбирает
+/// слот, правый — выбрасывает предмет, перетаскивание — перемещает/меняет слоты.
+/// </summary>
+public partial class InventorySlotCell : Button
+{
+	public int SlotIndex { get; set; }
+	public bool Empty { get; set; }
+	public Texture2D DragIcon { get; set; }
+
+	public event System.Action<int> Selected;
+	public event System.Action<int> DropRequested;
+	public event System.Action<int, int> MoveRequested;
+
+	public override void _Ready()
+	{
+		Pressed += () => Selected?.Invoke(SlotIndex);
+		GuiInput += OnGuiInput;
+	}
+
+	private void OnGuiInput(InputEvent @event)
+	{
+		// ПКМ по ячейке — выбросить предмет из этого слота.
+		if (@event is InputEventMouseButton { Pressed: true, ButtonIndex: MouseButton.Right })
+		{
+			DropRequested?.Invoke(SlotIndex);
+		}
+	}
+
+	// Начало перетаскивания: тянуть можно только непустой слот. Возвращаем индекс
+	// исходного слота как полезную нагрузку и показываем иконку под курсором.
+	public override Variant _GetDragData(Vector2 atPosition)
+	{
+		if (Empty)
+		{
+			return default;
+		}
+
+		var preview = new TextureRect
+		{
+			Texture = DragIcon,
+			CustomMinimumSize = new Vector2(48, 48),
+			ExpandMode = TextureRect.ExpandModeEnum.IgnoreSize,
+			StretchMode = TextureRect.StretchModeEnum.KeepAspectCentered,
+			Modulate = new Color(1f, 1f, 1f, 0.85f),
 		};
+		SetDragPreview(preview);
+
+		return SlotIndex;
+	}
+
+	// Принимаем перетаскивание только от другого слота инвентаря (int-нагрузка).
+	public override bool _CanDropData(Vector2 atPosition, Variant data)
+	{
+		return data.VariantType == Variant.Type.Int;
+	}
+
+	public override void _DropData(Vector2 atPosition, Variant data)
+	{
+		int from = data.AsInt32();
+		if (from != SlotIndex)
+		{
+			MoveRequested?.Invoke(from, SlotIndex);
+		}
 	}
 }

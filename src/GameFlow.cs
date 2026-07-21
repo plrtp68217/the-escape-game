@@ -39,6 +39,7 @@ public partial class GameFlow : Node
 		_ui.RematchRequested += OnRematchRequested;
 		_ui.InventorySlotSelected += OnInventorySlotSelected;
 		_ui.InventorySlotDropRequested += OnInventorySlotDropRequested;
+		_ui.InventorySlotMoveRequested += OnInventorySlotMoveRequested;
 
 		NetworkManager.Instance.Connected += OnNetworkConnected;
 		NetworkManager.Instance.ConnectionError += OnNetworkError;
@@ -179,6 +180,7 @@ public partial class GameFlow : Node
 			_ui.RematchRequested -= OnRematchRequested;
 			_ui.InventorySlotSelected -= OnInventorySlotSelected;
 			_ui.InventorySlotDropRequested -= OnInventorySlotDropRequested;
+			_ui.InventorySlotMoveRequested -= OnInventorySlotMoveRequested;
 		}
 
 		if (NetworkManager.Instance != null)
@@ -494,6 +496,18 @@ public partial class GameFlow : Node
 	private void OnInventorySlotDropRequested(int slotIndex)
 	{
 		PlayerController.LocalPlayer?.RequestDropSlot(slotIndex);
+	}
+
+	// Перетаскивание предмета между слотами: серверный запрос (авторитет сервера).
+	private void OnInventorySlotMoveRequested(int fromIndex, int toIndex)
+	{
+		if (PlayerController.LocalPlayer == null)
+		{
+			return;
+		}
+
+		Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestMoveSlot),
+			(long)PlayerController.LocalPlayer.PlayerId, fromIndex, toIndex);
 	}
 
 	private void TogglePause()

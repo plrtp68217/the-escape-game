@@ -35,6 +35,7 @@ public partial class UIManager : Node
     public event System.Action LeaveRequested;
     public event System.Action<int> InventorySlotSelected;
     public event System.Action<int> InventorySlotDropRequested;
+    public event System.Action<int, int> InventorySlotMoveRequested;
 
     public InventoryUI Inventory => _inventory;
     public HotbarUI Hotbar => _hotbar;
@@ -62,6 +63,7 @@ public partial class UIManager : Node
         _inventory = _screenManager.GetNode<InventoryUI>("Inventory");
         _inventory.SlotSelected += index => InventorySlotSelected?.Invoke(index);
         _inventory.SlotDropRequested += index => InventorySlotDropRequested?.Invoke(index);
+        _inventory.SlotMoveRequested += (from, to) => InventorySlotMoveRequested?.Invoke(from, to);
 
         _hotbar = _screenManager.GetNode<HotbarUI>("Hotbar");
         _hotbar.Visible = false;

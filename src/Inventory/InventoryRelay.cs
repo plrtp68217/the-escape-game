@@ -54,6 +54,26 @@ public partial class InventoryRelay : Node
         BroadcastInventory(player);
     }
 
+    // Клиент просит сервер переместить/поменять местами два слота (drag-and-drop).
+    // Как и экипировка — сервер авторитетно меняет инвентарь и рассылает результат.
+    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
+    public void RequestMoveSlot(long playerId, int fromIndex, int toIndex)
+    {
+        if (!Multiplayer.IsServer())
+        {
+            return;
+        }
+
+        PlayerController player = FindPlayerController(playerId);
+        if (player == null)
+        {
+            return;
+        }
+
+        player.Inventory.MoveSlot(fromIndex, toIndex);
+        BroadcastInventory(player);
+    }
+
     // Сервер рассылает всем актуальное состояние инвентаря игрока. Общий путь
     // для подбора, экипировки и любых других серверных изменений инвентаря.
     public void BroadcastInventory(PlayerController player)
