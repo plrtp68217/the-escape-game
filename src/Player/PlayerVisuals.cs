@@ -26,10 +26,17 @@ public partial class PlayerVisuals : Node
 		_model = _player.GetNodeOrNull<Node3D>("Model");
 		_nameTag = _player.GetNodeOrNull<Label3D>("NameTag");
 
-		// Локальный игрок не должен видеть собственную модель от первого лица.
-		if (_player.IsMultiplayerAuthority() && _model != null)
+		// Локальный игрок не должен видеть собственную модель и неймтег от первого лица.
+		if (_player.IsMultiplayerAuthority())
 		{
-			_model.Visible = false;
+			if (_model != null)
+			{
+				_model.Visible = false;
+			}
+			if (_nameTag != null)
+			{
+				_nameTag.Visible = false;
+			}
 		}
 	}
 

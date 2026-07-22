@@ -176,7 +176,10 @@ public partial class PlayerInventoryController : Node
 
 	private void NormalizeHeldModel(Node3D model)
 	{
-		Inventory.ModelBounds.FitVisibleSize(model, 0.25f);
+		// Предмет в руке показывается близко к камере — авто-сжатие до фиксированного
+		// размера делает его слишком маленьким. Ограничиваем только гигантские
+		// модели, оставляя естественный масштаб средних.
+		Inventory.ModelBounds.ClampVisibleSize(model, 0.08f, 0.6f);
 
 		if (Inventory.ModelBounds.TryComputeWorldAabb(model, out Aabb scaled))
 		{
