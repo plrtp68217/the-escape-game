@@ -25,6 +25,12 @@ public partial class PlayerVisuals : Node
 		_player = GetParent<PlayerController>();
 		_model = _player.GetNodeOrNull<Node3D>("Model");
 		_nameTag = _player.GetNodeOrNull<Label3D>("NameTag");
+
+		// Локальный игрок не должен видеть собственную модель от первого лица.
+		if (_player.IsMultiplayerAuthority() && _model != null)
+		{
+			_model.Visible = false;
+		}
 	}
 
 	public override void _ExitTree()
