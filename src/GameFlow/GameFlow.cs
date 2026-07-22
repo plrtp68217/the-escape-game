@@ -512,7 +512,13 @@ public partial class GameFlow : Node
 			return;
 		}
 
-		ServiceLocator.Inventory?.RequestEquip((long)PlayerController.LocalPlayer.PlayerId, slotIndex);
+		Inventory.InventorySlot slot = PlayerController.LocalPlayer.Inventory.Slots[slotIndex];
+		if (slot.IsEmpty)
+		{
+			return;
+		}
+
+		ServiceLocator.Inventory?.RequestEquip((long)PlayerController.LocalPlayer.PlayerId, slot.Item.Id);
 	}
 
 	private void OnInventorySlotDropRequested(int slotIndex)

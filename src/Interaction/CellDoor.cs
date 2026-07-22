@@ -11,7 +11,7 @@ namespace EscapeGame.Interaction;
 /// выбивает топором за несколько ударов; надзиратель может запирать и закрывать.
 /// Состояние — авторитет сервера, рассылается всем через SyncState.
 /// </summary>
-public partial class CellDoor : StaticBody3D, IInteractable
+public partial class CellDoor : StaticBody3D, IInteractable, IAxeHittable
 {
     // Все двери в сцене — по образцу PlayerController.AllPlayers. Нужен, чтобы
     // при перезапуске раунда запереть их все, не завися от путей в сцене.

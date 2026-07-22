@@ -8,10 +8,8 @@ using EscapeGame.Services;
 namespace EscapeGame.Combat;
 
 /// <summary>
-/// Серверный посредник боя и лечения: удары надзирателя, использование
-/// расходников, подъём поверженных и синхронизация здоровья. Авторитет
-/// сервера. Добавляется как autoload (см. project.godot). По образцу
-/// InventoryRelay / InteractionRelay.
+/// Серверный посредник для боя и лечения. Авторитет сервера: клиенты
+/// присылают запросы на атаку/лечение/подъём, сервер валидирует и применяет.
 /// </summary>
 public partial class CombatRelay : Node
 {
@@ -22,101 +20,95 @@ public partial class CombatRelay : Node
         Instance = this;
     }
 
-    // Надзиратель бьёт заключённого (клиент прислал цель, сервер проверяет).
+    private bool ValidateSender(long playerId)
+    {
+        long senderId = Multiplayer.GetRemoteSenderId();
+        if (senderId == 0 || playerId == senderId)
+        {
+            return true;
+        }
+
+        GD.PushWarning($"[CombatRelay] PlayerId mismatch: expected {senderId}, got {playerId}");
+        return false;
+    }
+
+    // Заключённый бьёт топором надзирателя. Клиент присылает id цели,
+    // сервер проверяет дистанцию и роли.
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestAttack(long attackerId, long targetId)
     {
-        if (!ServiceLocator.Network?.IsServer ?? false)
+        if (!ServiceLocator.Network?.IsServer ?? false || !ValidateSender(attackerId))
         {
             return;
         }
 
-        PlayerController attacker = Find(attackerId);
-        PlayerController target = Find(targetId);
-        if (attacker == null || target == null)
+        PlayerController attacker = ServiceLocator.Players.Get(attackerId);
+        PlayerController target = ServiceLocator.Players.Get(targetId);
+
+        if (attacker == null
+            || target == null
+            || attacker.Role != PlayerRole.Prisoner
+            || target.Role != PlayerRole.Warden
+            || attacker.VitalState != PlayerVitalState.Alive
+            || target.VitalState != PlayerVitalState.Alive
+            || attacker.Inventory.EquippedSlot?.Item?.Id != ItemIds.Axe)
         {
             return;
         }
 
-        if (attacker.Role != PlayerRole.Warden || target.Role != PlayerRole.Prisoner)
-        {
-            return;
-        }
-        if (target.VitalState != PlayerVitalState.Alive)
-        {
-            return;
-        }
-        if (attacker.Inventory.EquippedSlot?.Item?.Id != G.Door.AxeItemId)
-        {
-            return;
-        }
-        // Небольшой запас к дальности — позиции слегка расходятся из-за сети.
-        if (attacker.GlobalPosition.DistanceTo(target.GlobalPosition) > G.Combat.AttackRange + 1f)
+        if (attacker.GlobalPosition.DistanceTo(target.GlobalPosition) > G.Combat.AttackRange)
         {
             return;
         }
 
-        int health = Mathf.Max(0, target.Health - G.Combat.AxeDamage);
-        bool downed = health <= 0;
-        SyncVitalsTo(target, health, downed ? PlayerVitalState.Downed : PlayerVitalState.Alive);
-
-        // Если это был последний живой заключённый — надзиратель побеждает сразу.
-        if (downed)
-        {
-            RoundManager.Instance?.CheckAllDowned();
-        }
+        int health = System.Math.Max(0, target.Health - G.Combat.AxeDamage);
+        PlayerVitalState state = health > 0 ? PlayerVitalState.Alive : PlayerVitalState.Downed;
+        SyncVitalsTo(target, health, state);
     }
 
-    // Игрок использует расходник (аптечка/шприц) на себе, чтобы подлечиться.
+    // Заключённый удерживает ЛКМ с расходником, чтобы вылечиться.
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void RequestUseItem(long playerId, int slotIndex)
+    public void RequestSelfHeal(long playerId)
     {
-        if (!ServiceLocator.Network?.IsServer ?? false)
+        if (!ServiceLocator.Network?.IsServer ?? false || !ValidateSender(playerId))
         {
             return;
         }
 
-        PlayerController player = Find(playerId);
-        if (player == null || player.VitalState != PlayerVitalState.Alive)
-        {
-            return;
-        }
-        if (slotIndex < 0 || slotIndex >= player.Inventory.Slots.Count)
-        {
-            return;
-        }
-
-        Inventory.InventorySlot slot = player.Inventory.Slots[slotIndex];
-        if (slot.IsEmpty || !IsMedical(slot.Item.Id))
-        {
-            return;
-        }
-        if (player.Health >= G.Combat.MaxHealth)
+        PlayerController player = ServiceLocator.Players.Get(playerId);
+        if (player == null
+            || player.Role != PlayerRole.Prisoner
+            || player.VitalState != PlayerVitalState.Alive)
         {
             return;
         }
 
-        // Значение лечения берём ДО Remove: при удалении последней штуки слот
-        // обнуляет Item, и slot.Item.Id после Remove кинул бы NRE — из-за этого
-        // последняя пилюля/аптечка не лечила.
-        int healAmount = HealAmountFor(slot.Item.Id);
-        slot.Remove(1);
-        Inventory.InventoryRelay.Instance?.BroadcastInventory(player);
+        InventorySlot slot = player.Inventory.EquippedSlot;
+        if (slot == null || slot.IsEmpty || !IsMedical(slot.Item.Id))
+        {
+            return;
+        }
 
-        int health = Mathf.Min(G.Combat.MaxHealth, player.Health + healAmount);
+        // RemoveOne обнуляет Item, поэтому запоминаем id ДО удаления.
+        string itemId = slot.Item.Id;
+        player.Inventory.RemoveOne(itemId);
+        InventoryRelay.Instance?.BroadcastInventory(player);
+
+        int healAmount = HealAmountFor(itemId);
+        int health = System.Math.Min(G.Combat.MaxHealth, player.Health + healAmount);
         SyncVitalsTo(player, health, PlayerVitalState.Alive);
     }
 
-    // Заключённый поднимает ближайшего поверженного союзника, расходуя медикамент.
+    // Заключённый удерживает F рядом с поверженным союзником.
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestRevive(long reviverId)
     {
-        if (!ServiceLocator.Network?.IsServer ?? false)
+        if (!ServiceLocator.Network?.IsServer ?? false || !ValidateSender(reviverId))
         {
             return;
         }
 
-        PlayerController reviver = Find(reviverId);
+        PlayerController reviver = ServiceLocator.Players.Get(reviverId);
         if (reviver == null
             || reviver.Role != PlayerRole.Prisoner
             || reviver.VitalState != PlayerVitalState.Alive)
@@ -146,7 +138,6 @@ public partial class CombatRelay : Node
             return;
         }
 
-        // Подъём союзника предметов не требует — достаточно удержать F рядом.
         SyncVitalsTo(target, G.Combat.ReviveHealth, PlayerVitalState.Alive);
     }
 
@@ -187,10 +178,13 @@ public partial class CombatRelay : Node
     }
 
     // Сколько лечит расходник данного типа.
-    private static int HealAmountFor(string itemId) => itemId switch
+    private static int HealAmountFor(string itemId)
     {
-        "syringe" => G.Combat.SyringeHealAmount,
-        "pill" => G.Combat.PillHealAmount,
-        _ => G.Combat.HealAmount,
-    };
+        return itemId switch
+        {
+            "syringe" => G.Combat.SyringeHealAmount,
+            "pill" => G.Combat.PillHealAmount,
+            _ => G.Combat.HealAmount,
+        };
+    }
 }

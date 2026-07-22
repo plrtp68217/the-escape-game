@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 using Godot;
 using EscapeGame.Player;
 using EscapeGame.Services;
@@ -6,9 +6,10 @@ using EscapeGame.Services;
 namespace EscapeGame.Interaction;
 
 /// <summary>
-/// Серверный посредник для взаимодействий. Клиент присылает путь к объекту,
-/// сервер проверяет и выполняет действие. Добавляется как autoload
-/// (см. project.godot) и имеет authority сервера. По образцу InventoryRelay.
+/// Серверный посредник для взаимодействий с объектами мира. Авторитет
+/// сервера: клиенты посылают запросы вида <see cref="InteractionRequest"/u003e,
+/// сервер валидирует и выполняет. Добавление нового вида взаимодействия
+/// не требует менять сигнатуру сервиса — только регистрацию обработчика здесь.
 /// </summary>
 public partial class InteractionRelay : Node
 {
@@ -19,59 +20,55 @@ public partial class InteractionRelay : Node
         Instance = this;
     }
 
-    // Клиент просит сервер провести взаимодействие с объектом по его пути.
-    // CallLocal = true, чтобы хост тоже мог вызывать локально при самоотправке.
+    // Универсальный RPC: клиенты шлют запрос, сервер диспатчит по Kind.
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void RequestInteract(long playerId, string interactablePath)
+    public void ExecuteInteraction(int kind, long playerId, string targetPath, string payload)
     {
         if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
 
-        PlayerController player = ServiceLocator.Players.All
-            .FirstOrDefault(p => p.PlayerId == playerId);
-        if (player == null)
+        long senderId = Multiplayer.GetRemoteSenderId();
+        if (senderId != 0 && playerId != senderId)
         {
+            GD.PushWarning($"[InteractionRelay] PlayerId mismatch: expected {senderId}, got {playerId}");
             return;
         }
 
-        Node node = GetNodeOrNull(interactablePath);
-        if (node is not IInteractable interactable || !node.IsInsideTree())
-        {
-            return;
-        }
-
-        if (!interactable.CanInteract(player))
-        {
-            return;
-        }
-
-        interactable.Interact(player);
+        var request = new InteractionRequest((InteractionKind)kind, playerId, targetPath, payload);
+        Dispatch(request);
     }
 
-    // Заключённый бьёт топором по двери (ЛКМ). Клиент присылает путь к двери,
-    // сервер проверяет и наносит удар. Отдельно от RequestInteract, т.к. это
-    // атака по ЛКМ, а не взаимодействие по F.
-    [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
-    public void RequestAxeHit(long playerId, string doorPath)
+    private void Dispatch(InteractionRequest request)
     {
-        if (!ServiceLocator.Network?.IsServer ?? false)
+        Node target = GetNodeOrNull(request.TargetPath);
+        PlayerController player = ServiceLocator.Players.Get(request.PlayerId);
+        if (player == null || target == null || !target.IsInsideTree())
         {
             return;
         }
 
-        PlayerController player = ServiceLocator.Players.All
-            .FirstOrDefault(p => p.PlayerId == playerId);
-        if (player == null)
+        switch (request.Kind)
         {
-            return;
-        }
+            case InteractionKind.Use:
+                if (target is IInteractable interactable
+                    && interactable.CanInteract(player))
+                {
+                    interactable.Interact(player);
+                }
+                break;
 
-        Node node = GetNodeOrNull(doorPath);
-        if (node is CellDoor door && node.IsInsideTree())
-        {
-            door.HitWithAxe(player);
+            case InteractionKind.AxeHit:
+                if (target is IAxeHittable hittable)
+                {
+                    hittable.HitWithAxe(player);
+                }
+                break;
+
+            default:
+                GD.PushWarning($"[InteractionRelay] Неизвестный вид взаимодействия: {request.Kind}");
+                break;
         }
     }
 }

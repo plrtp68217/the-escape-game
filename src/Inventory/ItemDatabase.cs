@@ -18,6 +18,11 @@ public static class ItemDatabase
 
     public static InventoryItem Get(string id)
     {
+        if (string.IsNullOrEmpty(id))
+        {
+            return null;
+        }
+
         return _items.TryGetValue(id, out InventoryItem item) ? item : null;
     }
 

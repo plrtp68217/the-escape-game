@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3 uid="uid://d0s4w7u1a0xq0"]
+
+[ext_resource type="Script" path="res://tests/LobbyFlowTest.cs" id="1_qwerty"]
+[ext_resource type="Script" path="res://src/Core/Main.cs" id="2_main"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("2_main")
+
+[node name="Players" type="Node3D" parent="."]
+
+[node name="LobbyFlowTest" type="Node" parent="."]
+script = ExtResource("1_qwerty")

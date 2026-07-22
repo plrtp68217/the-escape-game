@@ -19,9 +19,9 @@ public class CombatService : ICombatService
 		_relay?.RpcId(1, nameof(CombatRelay.RequestAttack), attackerId, targetId);
 	}
 
-	public void RequestUseItem(long playerId, int slotIndex)
+	public void RequestSelfHeal(long playerId)
 	{
-		_relay?.RpcId(1, nameof(CombatRelay.RequestUseItem), playerId, slotIndex);
+		_relay?.RpcId(1, nameof(CombatRelay.RequestSelfHeal), playerId);
 	}
 
 	public void RequestRevive(long reviverId)

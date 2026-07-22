@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using EscapeGame.Interaction;
 using EscapeGame.Services;
 
 namespace EscapeGame.Player;
@@ -91,7 +92,11 @@ public partial class PlayerInteraction : Node
 	{
 		if (_targetInteractable is Node node && GodotObject.IsInstanceValid(node))
 		{
-			_interaction?.RequestInteract((long)_player.PlayerId, node.GetPath().ToString());
+			var request = new InteractionRequest(
+				InteractionKind.Use,
+				(long)_player.PlayerId,
+				node.GetPath().ToString());
+			_interaction?.Execute(request);
 		}
 	}
 

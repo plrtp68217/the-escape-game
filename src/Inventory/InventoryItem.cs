@@ -7,23 +7,23 @@ namespace EscapeGame.Inventory;
 /// </summary>
 public class InventoryItem
 {
-    public string Id { get; }
-    public string Name { get; }
-    public Texture2D Icon { get; }
-    public PackedScene WorldModel { get; }
-    public int MaxStack { get; }
+	public string Id { get; }
+	public string Name { get; }
+	public Texture2D Icon { get; }
+	public PackedScene WorldModel { get; }
+	public int MaxStack { get; }
 
-    public InventoryItem(
-        string id,
-        string name,
-        Texture2D icon = null,
-        PackedScene worldModel = null,
-        int maxStack = 64)
-    {
-        Id = id;
-        Name = name;
-        Icon = icon;
-        WorldModel = worldModel;
-        MaxStack = maxStack > 0 ? maxStack : 1;
-    }
+	public InventoryItem(
+		string id,
+		string name,
+		Texture2D icon = null,
+		PackedScene worldModel = null,
+		int maxStack = 64)
+	{
+		Id = id;
+		Name = name;
+		Icon = icon;
+		WorldModel = worldModel;
+		MaxStack = maxStack > 0 ? maxStack : 1;
+	}
 }

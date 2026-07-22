@@ -15,13 +15,9 @@ public class InteractionService : IInteractionService
 		_relay = relay;
 	}
 
-	public void RequestInteract(long playerId, string interactablePath)
+	public void Execute(InteractionRequest request)
 	{
-		_relay?.RpcId(1, nameof(InteractionRelay.RequestInteract), playerId, interactablePath);
-	}
-
-	public void RequestAxeHit(long playerId, string doorPath)
-	{
-		_relay?.RpcId(1, nameof(InteractionRelay.RequestAxeHit), playerId, doorPath);
+		_relay?.RpcId(1, nameof(InteractionRelay.ExecuteInteraction),
+			(int)request.Kind, request.PlayerId, request.TargetPath, request.Payload);
 	}
 }

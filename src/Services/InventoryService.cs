@@ -21,9 +21,9 @@ public class InventoryService : IInventoryService
 		_relay?.RpcId(1, nameof(InventoryRelay.RequestInventorySync), playerId);
 	}
 
-	public void RequestEquip(long playerId, int slotIndex)
+	public void RequestEquip(long playerId, string itemId)
 	{
-		_relay?.RpcId(1, nameof(InventoryRelay.RequestEquip), playerId, slotIndex);
+		_relay?.RpcId(1, nameof(InventoryRelay.RequestEquip), playerId, itemId);
 	}
 
 	public void RequestMoveSlot(long playerId, int fromIndex, int toIndex)
@@ -31,13 +31,18 @@ public class InventoryService : IInventoryService
 		_relay?.RpcId(1, nameof(InventoryRelay.RequestMoveSlot), playerId, fromIndex, toIndex);
 	}
 
-	public void RequestDrop(long playerId, int slotIndex, Vector3 position)
+	public void RequestDrop(long playerId, string itemId, Vector3 position)
 	{
-		_relay?.RpcId(1, nameof(InventoryRelay.RequestDrop), playerId, slotIndex, position);
+		_relay?.RpcId(1, nameof(InventoryRelay.RequestDrop), playerId, itemId, position);
 	}
 
 	public void BroadcastInventory(PlayerController player)
 	{
 		_relay?.BroadcastInventory(player);
+	}
+
+	public void BroadcastClearWorldItems()
+	{
+		_relay?.BroadcastClearWorldItems();
 	}
 }

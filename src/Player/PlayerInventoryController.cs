@@ -113,10 +113,16 @@ public partial class PlayerInventoryController : Node
 
 	public void RequestDropSlot(int slotIndex)
 	{
+		Inventory.InventorySlot slot = _player.Inventory.Slots[slotIndex];
+		if (slot.IsEmpty)
+		{
+			return;
+		}
+
 		Vector3 forward = -_player.GlobalTransform.Basis.Z;
 		Vector3 position = _player.GlobalPosition + forward * G.DropDistance + Vector3.Up * G.DropHeight;
 
-		_inventoryService?.RequestDrop((long)_player.PlayerId, slotIndex, position);
+		_inventoryService?.RequestDrop((long)_player.PlayerId, slot.Item.Id, position);
 	}
 
 	public void CycleHotbar(int direction)
@@ -133,9 +139,10 @@ public partial class PlayerInventoryController : Node
 		for (int step = 1; step <= count; step++)
 		{
 			int index = ((start + direction * step) % count + count) % count;
-			if (!_player.Inventory.Slots[index].IsEmpty)
+			Inventory.InventorySlot slot = _player.Inventory.Slots[index];
+			if (!slot.IsEmpty)
 			{
-				_inventoryService?.RequestEquip((long)_player.PlayerId, index);
+				_inventoryService?.RequestEquip((long)_player.PlayerId, slot.Item.Id);
 				return;
 			}
 		}
@@ -154,7 +161,7 @@ public partial class PlayerInventoryController : Node
 			return;
 		}
 
-		_inventoryService?.RequestEquip((long)_player.PlayerId, index);
+		_inventoryService?.RequestEquip((long)_player.PlayerId, _player.Inventory.Slots[index].Item.Id);
 	}
 
 	private static int HotbarSlotFromKey(Key key) => key switch

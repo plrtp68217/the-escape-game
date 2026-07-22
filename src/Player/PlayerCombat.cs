@@ -121,7 +121,11 @@ public partial class PlayerCombat : Node
 
 		if (collider is Interaction.CellDoor door)
 		{
-			ServiceLocator.Interaction?.RequestAxeHit((long)_player.PlayerId, door.GetPath().ToString());
+			var request = new Interaction.InteractionRequest(
+				Interaction.InteractionKind.AxeHit,
+				(long)_player.PlayerId,
+				door.GetPath().ToString());
+			ServiceLocator.Interaction?.Execute(request);
 		}
 	}
 
@@ -170,13 +174,15 @@ public partial class PlayerCombat : Node
 		{
 			_healProgress = 1f;
 			_healSent = true;
-			_combat?.RequestUseItem((long)_player.PlayerId, _player.Inventory.EquippedSlotIndex);
+			_combat?.RequestSelfHeal((long)_player.PlayerId);
 		}
 	}
 
 	private static bool IsConsumable(string itemId)
 	{
-		return itemId == "health" || itemId == "pill" || itemId == "syringe";
+		return itemId == Inventory.ItemIds.Health
+			|| itemId == Inventory.ItemIds.Pill
+			|| itemId == Inventory.ItemIds.Syringe;
 	}
 
 	private void UpdateRevive(float delta)

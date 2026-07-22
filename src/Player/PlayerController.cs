@@ -185,9 +185,10 @@ public partial class PlayerController : CharacterBody3D
 			role = info.Role;
 		}
 
-		// Единый стартовый набор: топор есть у всех (заключённый — для двери,
-		// надзиратель — как оружие). Расходники и инструменты барьеров ищут в мире.
+		// Единый стартовый набор: топор (дверь/барьер/защита), аптечка и таблетка.
 		Inventory.AddItem(Inv.ItemDatabase.Get(G.Door.AxeItemId), 1);
+		Inventory.AddItem(Inv.ItemDatabase.Get("health"), 1);
+		Inventory.AddItem(Inv.ItemDatabase.Get("pill"), 1);
 		Inventory.TryEquip(0);
 		ServiceLocator.Inventory?.BroadcastInventory(this);
 	}

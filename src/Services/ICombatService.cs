@@ -8,7 +8,7 @@ namespace EscapeGame.Services;
 public interface ICombatService
 {
 	void RequestAttack(long attackerId, long targetId);
-	void RequestUseItem(long playerId, int slotIndex);
+	void RequestSelfHeal(long playerId);
 	void RequestRevive(long reviverId);
 	void ResetAll();
 }

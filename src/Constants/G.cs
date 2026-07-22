@@ -204,8 +204,8 @@ public static class G
         // Сколько ударов топором нужно, чтобы выбить запертую дверь.
         public const int Health = 3;
 
-        public const string KeyItemId = "key";
-        public const string AxeItemId = "axe";
+        public const string KeyItemId = Inventory.ItemIds.Key;
+        public const string AxeItemId = Inventory.ItemIds.Axe;
     }
 
     // Способности сторон (Веха 8): спринт/выносливость, присед, скан надзирателя.
@@ -231,12 +231,12 @@ public static class G
     // Инструменты для барьеров (Веха 7). Id совпадают с ItemDatabase.
     public static class Tools
     {
-        public const string Screwdriver = "screwdriver";
-        public const string Crowbar = "crowbar";
-        public const string Cutters = "cutters";
-        public const string Keycard = "keycard";
-        public const string Cipher = "cipher";
-        public const string Shovel = "shovel";
-        public const string Explosive = "explosive";
+        public const string Screwdriver = Inventory.ItemIds.Screwdriver;
+        public const string Crowbar = Inventory.ItemIds.Crowbar;
+        public const string Cutters = Inventory.ItemIds.Cutters;
+        public const string Keycard = Inventory.ItemIds.Keycard;
+        public const string Cipher = Inventory.ItemIds.Cipher;
+        public const string Shovel = Inventory.ItemIds.Shovel;
+        public const string Explosive = Inventory.ItemIds.Explosive;
     }
 }
