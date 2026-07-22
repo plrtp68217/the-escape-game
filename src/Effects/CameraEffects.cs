@@ -1,6 +1,6 @@
 using Godot;
 
-namespace EscapeGame;
+namespace EscapeGame.Effects;
 
 /// <summary>
 /// Эффекты камеры при движении: покачивание при ходьбе, наклон при стрейфе,

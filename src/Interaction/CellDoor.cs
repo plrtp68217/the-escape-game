@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using Godot;
+using EscapeGame.Inventory;
+using EscapeGame.Player;
 
 namespace EscapeGame.Interaction;
 
@@ -62,7 +64,7 @@ public partial class CellDoor : StaticBody3D, IInteractable
         if (Multiplayer.MultiplayerPeer != null
             && body is PlayerController player && player.IsMultiplayerAuthority())
         {
-            player.RegisterInteractable(this);
+            player.Interaction?.RegisterInteractable(this);
         }
     }
 
@@ -71,7 +73,7 @@ public partial class CellDoor : StaticBody3D, IInteractable
         if (Multiplayer.MultiplayerPeer != null
             && body is PlayerController player && player.IsMultiplayerAuthority())
         {
-            player.UnregisterInteractable(this);
+            player.Interaction?.UnregisterInteractable(this);
         }
     }
 

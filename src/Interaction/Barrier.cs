@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using EscapeGame.Player;
 
 namespace EscapeGame.Interaction;
 
@@ -61,7 +62,7 @@ public partial class Barrier : StaticBody3D, IInteractable
         if (Multiplayer.MultiplayerPeer != null
             && body is PlayerController player && player.IsMultiplayerAuthority())
         {
-            player.RegisterInteractable(this);
+            player.Interaction?.RegisterInteractable(this);
         }
     }
 
@@ -70,7 +71,7 @@ public partial class Barrier : StaticBody3D, IInteractable
         if (Multiplayer.MultiplayerPeer != null
             && body is PlayerController player && player.IsMultiplayerAuthority())
         {
-            player.UnregisterInteractable(this);
+            player.Interaction?.UnregisterInteractable(this);
         }
     }
 

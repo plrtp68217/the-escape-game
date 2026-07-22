@@ -1,5 +1,6 @@
 using System.Linq;
 using Godot;
+using EscapeGame.Player;
 
 namespace EscapeGame.Interaction;
 

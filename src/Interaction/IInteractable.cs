@@ -1,4 +1,5 @@
 using Godot;
+using EscapeGame.Player;
 
 namespace EscapeGame.Interaction;
 

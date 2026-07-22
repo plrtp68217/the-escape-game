@@ -1,5 +1,8 @@
 using System.Linq;
 using Godot;
+using EscapeGame.GameFlow;
+using EscapeGame.Inventory;
+using EscapeGame.Player;
 
 namespace EscapeGame.Combat;
 

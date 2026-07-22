@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 using EscapeGame.Interaction;
+using EscapeGame.Player;
 
 namespace EscapeGame.Inventory;
 
@@ -63,7 +64,7 @@ public partial class WorldItem : Area3D, IInteractable
         if (Multiplayer.MultiplayerPeer != null
             && body is PlayerController player && player.IsMultiplayerAuthority())
         {
-            player.RegisterInteractable(this);
+            player.Interaction?.RegisterInteractable(this);
         }
     }
 
@@ -72,7 +73,7 @@ public partial class WorldItem : Area3D, IInteractable
         if (Multiplayer.MultiplayerPeer != null
             && body is PlayerController player && player.IsMultiplayerAuthority())
         {
-            player.UnregisterInteractable(this);
+            player.Interaction?.UnregisterInteractable(this);
         }
     }
 

@@ -1,9 +1,9 @@
 [gd_scene format=3 uid="uid://blpeh5w31vne2"]
 
-[ext_resource type="Script" uid="uid://bfuhnc0esrq36" path="res://src/Main.cs" id="1_main"]
+[ext_resource type="Script" uid="uid://bfuhnc0esrq36" path="res://src/Core/Main.cs" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/cell.tscn" id="2_cell"]
 [ext_resource type="PackedScene" path="res://scenes/barrier.tscn" id="3_barrier"]
-[ext_resource type="Script" uid="uid://ji5si3bpobv" path="res://src/ExitZone.cs" id="4_exit"]
+[ext_resource type="Script" uid="uid://ji5si3bpobv" path="res://src/Core/ExitZone.cs" id="4_exit"]
 [ext_resource type="PackedScene" path="res://scenes/items/screwdriver.tscn" id="5_screwdriver"]
 [ext_resource type="PackedScene" path="res://scenes/items/cutters.tscn" id="6_cutters"]
 [ext_resource type="PackedScene" path="res://scenes/items/cipher.tscn" id="7_cipher"]

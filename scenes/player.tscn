@@ -1,7 +1,14 @@
 [gd_scene format=3 uid="uid://cd1e025wlou5a"]
 
-[ext_resource type="Script" uid="uid://cqpgoqo6go5sm" path="res://src/Controllers/PlayerController.cs" id="1_3vyb7"]
-[ext_resource type="PackedScene" uid="uid://drvd5x1blffvp" path="res://assets/characters/sanitar.glb" id="2_g2els"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5sm" path="res://src/Player/PlayerController.cs" id="1_3vyb7"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5sn" path="res://src/Player/PlayerMovement.cs" id="2_movement"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5so" path="res://src/Player/PlayerCamera.cs" id="3_camera"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5sp" path="res://src/Player/PlayerAbilities.cs" id="4_abilities"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5sq" path="res://src/Player/PlayerInteraction.cs" id="5_interaction"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5sr" path="res://src/Player/PlayerCombat.cs" id="6_combat"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5ss" path="res://src/Player/PlayerInventoryController.cs" id="7_inventory"]
+[ext_resource type="Script" uid="uid://cqpgoqo6go5st" path="res://src/Player/PlayerVisuals.cs" id="8_visuals"]
+[ext_resource type="PackedScene" uid="uid://drvd5x1blffvp" path="res://assets/characters/sanitar.glb" id="9_g2els"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_3vyb7"]
 properties/0/path = NodePath(".:position")
@@ -42,7 +49,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28, 0.55, -1.0)
 
 [node name="Model" type="Node3D" parent="." unique_id=105026785]
 
-[node name="AuxScene" parent="Model" unique_id=12442285 instance=ExtResource("2_g2els")]
+[node name="AuxScene" parent="Model" unique_id=12442285 instance=ExtResource("9_g2els")]
 transform = Transform3D(-1, 0, -8.742278e-08, 0, 1, 0, 8.742278e-08, 0, -1, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=43441623]
@@ -53,3 +60,24 @@ shape = SubResource("CapsuleShape3D_nsfkv")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.3, 0)
 pixel_size = 0.01
 billboard = 1
+
+[node name="Movement" type="Node" parent="." unique_id=1072961301]
+script = ExtResource("2_movement")
+
+[node name="Camera" type="Node" parent="." unique_id=1072961302]
+script = ExtResource("3_camera")
+
+[node name="Abilities" type="Node" parent="." unique_id=1072961303]
+script = ExtResource("4_abilities")
+
+[node name="Interaction" type="Node" parent="." unique_id=1072961304]
+script = ExtResource("5_interaction")
+
+[node name="Combat" type="Node" parent="." unique_id=1072961305]
+script = ExtResource("6_combat")
+
+[node name="Inventory" type="Node" parent="." unique_id=1072961306]
+script = ExtResource("7_inventory")
+
+[node name="Visuals" type="Node" parent="." unique_id=1072961307]
+script = ExtResource("8_visuals")

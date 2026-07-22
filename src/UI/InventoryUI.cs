@@ -1,4 +1,5 @@
 using Godot;
+using EscapeGame.Inventory;
 
 namespace EscapeGame.UI;
 
