@@ -4,6 +4,7 @@ using System.Linq;
 using Godot;
 using EscapeGame.Network;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.GameFlow;
 
@@ -47,7 +48,7 @@ public partial class RoundManager : Node
         // Таймер авторитетен на сервере и не зависит от локальной фазы UI: пауза
         // или открытый инвентарь у ХОСТА — это его личный экран, а раунд для
         // остальных игроков продолжается. Единственный гейт — активность раунда.
-        if (!RoundActive || !Multiplayer.IsServer())
+        if (!RoundActive || !(ServiceLocator.Network?.IsServer ?? false))
         {
             return;
         }
@@ -84,12 +85,12 @@ public partial class RoundManager : Node
     // из CombatRelay при нокауте и как подстраховка каждый кадр.
     public void CheckAllDowned()
     {
-        if (!Multiplayer.IsServer() || !RoundActive)
+        if (!(ServiceLocator.Network?.IsServer ?? false) || !RoundActive)
         {
             return;
         }
 
-        var active = PlayerController.AllPlayers.Values
+        var active = ServiceLocator.Players.All
             .Where(p => p.Role == PlayerRole.Prisoner && !_escaped.Contains(p.PlayerId))
             .ToList();
 
@@ -105,7 +106,7 @@ public partial class RoundManager : Node
     // Сервер: заключённый достиг выхода. Если сбежали все — победа заключённых.
     public void NotifyEscaped(long prisonerId)
     {
-        if (!Multiplayer.IsServer() || !RoundActive)
+        if (!(ServiceLocator.Network?.IsServer ?? false) || !RoundActive)
         {
             return;
         }
@@ -132,7 +133,7 @@ public partial class RoundManager : Node
     // откладываем на следующий тик, когда ростер и AllPlayers уже согласованы.
     private void OnPeerDisconnected(long id)
     {
-        if (!Multiplayer.IsServer() || !RoundActive)
+        if (!(ServiceLocator.Network?.IsServer ?? false) || !RoundActive)
         {
             return;
         }
@@ -144,7 +145,7 @@ public partial class RoundManager : Node
     // Сервер: пересчёт условий победы после выхода игрока из активного раунда.
     private void ReevaluateAfterLeave()
     {
-        if (!Multiplayer.IsServer() || !RoundActive || LobbyManager.Instance == null)
+        if (!(ServiceLocator.Network?.IsServer ?? false) || !RoundActive || LobbyManager.Instance == null)
         {
             return;
         }

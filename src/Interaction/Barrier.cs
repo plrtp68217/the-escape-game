@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Godot;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.Interaction;
 
@@ -121,7 +122,7 @@ public partial class Barrier : StaticBody3D, IInteractable
     // Возврат барьера в закрытое состояние при перезапуске раунда. Только сервер.
     public void ResetState()
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }

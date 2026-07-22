@@ -7,6 +7,7 @@ using EscapeGame.Inventory;
 using EscapeGame.Logging;
 using EscapeGame.Network;
 using EscapeGame.Player;
+using EscapeGame.Services;
 using EscapeGame.UI;
 
 namespace EscapeGame.GameFlow;
@@ -269,9 +270,9 @@ public partial class GameFlow : Node
 
 		// Стартовый набор по роли выдаёт сервер всем игрокам (единый путь для
 		// первого старта и рематча). Роль берётся из ростера лобби внутри метода.
-		if (Multiplayer.IsServer())
+		if (ServiceLocator.Network?.IsServer ?? false)
 		{
-			foreach (PlayerController player in PlayerController.AllPlayers.Values)
+			foreach (PlayerController player in ServiceLocator.Players.All)
 			{
 				player.GiveRoleLoadout();
 			}
@@ -432,7 +433,7 @@ public partial class GameFlow : Node
 	{
 		NetworkManager.Instance.Disconnect();
 		LobbyManager.Instance.Reset();
-		RoundManager.Instance.Reset();
+		ServiceLocator.Round.Reset();
 
 		_pendingStatus = status;
 		_inventoryBound = false;
@@ -511,8 +512,7 @@ public partial class GameFlow : Node
 			return;
 		}
 
-		Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestEquip),
-			(long)PlayerController.LocalPlayer.PlayerId, slotIndex);
+		ServiceLocator.Inventory?.RequestEquip((long)PlayerController.LocalPlayer.PlayerId, slotIndex);
 	}
 
 	private void OnInventorySlotDropRequested(int slotIndex)
@@ -528,8 +528,7 @@ public partial class GameFlow : Node
 			return;
 		}
 
-		Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestMoveSlot),
-			(long)PlayerController.LocalPlayer.PlayerId, fromIndex, toIndex);
+		ServiceLocator.Inventory?.RequestMoveSlot((long)PlayerController.LocalPlayer.PlayerId, fromIndex, toIndex);
 	}
 
 	private void TogglePause()

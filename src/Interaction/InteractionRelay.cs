@@ -1,6 +1,7 @@
 using System.Linq;
 using Godot;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.Interaction;
 
@@ -23,12 +24,12 @@ public partial class InteractionRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestInteract(long playerId, string interactablePath)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
 
-        PlayerController player = PlayerController.AllPlayers.Values
+        PlayerController player = ServiceLocator.Players.All
             .FirstOrDefault(p => p.PlayerId == playerId);
         if (player == null)
         {
@@ -55,12 +56,12 @@ public partial class InteractionRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestAxeHit(long playerId, string doorPath)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
 
-        PlayerController player = PlayerController.AllPlayers.Values
+        PlayerController player = ServiceLocator.Players.All
             .FirstOrDefault(p => p.PlayerId == playerId);
         if (player == null)
         {

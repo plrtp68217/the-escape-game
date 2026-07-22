@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Godot;
 using EscapeGame.Interaction;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.Inventory;
 
@@ -142,7 +143,7 @@ public partial class WorldItem : Area3D, IInteractable
     // количество и показ на всех пирах.
     public void ResetForRound()
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }

@@ -3,6 +3,7 @@ using System.Linq;
 using Godot;
 using EscapeGame.Network;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.UI;
 
@@ -69,8 +70,8 @@ public partial class Scoreboard : Control
         string role = info.Role == PlayerRole.Warden ? "Надзиратель" : "Заключённый";
 
         string status = string.Empty;
-        if (PlayerController.AllPlayers.TryGetValue(info.Id, out PlayerController player)
-            && player.VitalState == PlayerVitalState.Downed)
+        PlayerController player = ServiceLocator.Players.Get(info.Id);
+        if (player != null && player.VitalState == PlayerVitalState.Downed)
         {
             status = " (повержен)";
         }

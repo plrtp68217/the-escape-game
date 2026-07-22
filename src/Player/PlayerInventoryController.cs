@@ -1,4 +1,5 @@
 using Godot;
+using EscapeGame.Services;
 
 namespace EscapeGame.Player;
 
@@ -11,10 +12,13 @@ public partial class PlayerInventoryController : Node
 	private Marker3D _hand;
 	private Vector3 _handBaseRotation;
 
+	private IInventoryService _inventoryService;
+
 	public override void _Ready()
 	{
 		_player = GetParent<PlayerController>();
 		_hand = _player.GetNodeOrNull<Marker3D>("Pivot/Hand");
+		_inventoryService = ServiceLocator.Inventory;
 		if (_hand != null)
 		{
 			_handBaseRotation = _hand.Rotation;
@@ -112,8 +116,7 @@ public partial class PlayerInventoryController : Node
 		Vector3 forward = -_player.GlobalTransform.Basis.Z;
 		Vector3 position = _player.GlobalPosition + forward * G.DropDistance + Vector3.Up * G.DropHeight;
 
-		Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestDrop),
-			(long)_player.PlayerId, slotIndex, position);
+		_inventoryService?.RequestDrop((long)_player.PlayerId, slotIndex, position);
 	}
 
 	public void CycleHotbar(int direction)
@@ -132,8 +135,7 @@ public partial class PlayerInventoryController : Node
 			int index = ((start + direction * step) % count + count) % count;
 			if (!_player.Inventory.Slots[index].IsEmpty)
 			{
-				Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestEquip),
-					(long)_player.PlayerId, index);
+				_inventoryService?.RequestEquip((long)_player.PlayerId, index);
 				return;
 			}
 		}
@@ -152,8 +154,7 @@ public partial class PlayerInventoryController : Node
 			return;
 		}
 
-		Inventory.InventoryRelay.Instance?.RpcId(1, nameof(Inventory.InventoryRelay.RequestEquip),
-			(long)_player.PlayerId, index);
+		_inventoryService?.RequestEquip((long)_player.PlayerId, index);
 	}
 
 	private static int HotbarSlotFromKey(Key key) => key switch
@@ -184,7 +185,7 @@ public partial class PlayerInventoryController : Node
 			return false;
 		}
 
-		return Multiplayer.MultiplayerPeer != null
+		return ServiceLocator.Network?.HasPeer ?? false
 			&& _player.IsMultiplayerAuthority();
 	}
 }

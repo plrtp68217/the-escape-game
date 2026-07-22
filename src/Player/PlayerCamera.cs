@@ -1,6 +1,7 @@
 using Godot;
 using EscapeGame.Core;
 using EscapeGame.Effects;
+using EscapeGame.Services;
 
 namespace EscapeGame.Player;
 
@@ -107,7 +108,7 @@ public partial class PlayerCamera : Node
 			return false;
 		}
 
-		return Multiplayer.MultiplayerPeer != null
+		return ServiceLocator.Network?.HasPeer ?? false
 			&& _player.IsMultiplayerAuthority();
 	}
 }

@@ -1,6 +1,7 @@
 using System.Linq;
 using Godot;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.Inventory;
 
@@ -23,7 +24,7 @@ public partial class InventoryRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = false, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestInventorySync(long playerId)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -39,7 +40,7 @@ public partial class InventoryRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestEquip(long playerId, int slotIndex)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -59,7 +60,7 @@ public partial class InventoryRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestMoveSlot(long playerId, int fromIndex, int toIndex)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -78,7 +79,7 @@ public partial class InventoryRelay : Node
     // для подбора, экипировки и любых других серверных изменений инвентаря.
     public void BroadcastInventory(PlayerController player)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -112,7 +113,7 @@ public partial class InventoryRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestDrop(long playerId, int slotIndex, Vector3 position)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -203,7 +204,7 @@ public partial class InventoryRelay : Node
     // Сервер инициирует очистку выброшенных предметов на всех пирах.
     public void BroadcastClearWorldItems()
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -213,7 +214,7 @@ public partial class InventoryRelay : Node
 
     private static PlayerController FindPlayerController(long playerId)
     {
-        return PlayerController.AllPlayers.Values.FirstOrDefault(p => p.PlayerId == playerId);
+        return ServiceLocator.Players.All.FirstOrDefault(p => p.PlayerId == playerId);
     }
 
     private static string[] PackIds(PlayerInventory inventory)

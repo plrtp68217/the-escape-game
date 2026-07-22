@@ -23,6 +23,7 @@ InventoryRelay="*res://src/Inventory/InventoryRelay.cs"
 InteractionRelay="*res://src/Interaction/InteractionRelay.cs"
 RoundManager="*res://src/GameFlow/RoundManager.cs"
 CombatRelay="*res://src/Combat/CombatRelay.cs"
+ServiceInitializer="*res://src/Core/ServiceInitializer.cs"
 
 [display]
 

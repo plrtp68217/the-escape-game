@@ -1,6 +1,7 @@
 using Godot;
 using EscapeGame.Logging;
 using EscapeGame.Network;
+using EscapeGame.Services;
 using Inv = EscapeGame.Inventory;
 
 namespace EscapeGame.Player;
@@ -30,8 +31,8 @@ public partial class PlayerController : CharacterBody3D
 	[Export]
 	public float NetRotationY { get; set; }
 
-	public static PlayerController LocalPlayer { get; private set; }
-	public static readonly System.Collections.Generic.Dictionary<long, PlayerController> AllPlayers = new();
+	// Совместимость: старый код обращается к LocalPlayer напрямую.
+	public static PlayerController LocalPlayer => ServiceLocator.Players?.Local;
 
 	public event System.Action InventoryChanged;
 	public event System.Action LocalDamaged;
@@ -70,31 +71,26 @@ public partial class PlayerController : CharacterBody3D
 		InventoryController = GetNodeOrNull<PlayerInventoryController>("Inventory");
 		Visuals = GetNodeOrNull<PlayerVisuals>("Visuals");
 
-		AllPlayers[PlayerId] = this;
+		ServiceLocator.Players?.Register(this);
 
 		NetPosition = Position;
 		NetRotationY = Rotation.Y;
 
 		Visuals?.RefreshRoleModel();
-		if (LobbyManager.Instance != null)
+		if (ServiceLocator.Lobby != null)
 		{
-			LobbyManager.Instance.LobbyUpdated += OnLobbyUpdated;
+			ServiceLocator.Lobby.LobbyUpdated += OnLobbyUpdated;
 		}
 
-		if (IsMultiplayerAuthority())
+		if (ServiceLocator.Network?.IsServer ?? false)
 		{
-			LocalPlayer = this;
-		}
-
-		if (Multiplayer.IsServer())
-		{
-			Inv.InventoryRelay.Instance?.BroadcastInventory(this);
+			ServiceLocator.Inventory?.BroadcastInventory(this);
 		}
 		else if (IsMultiplayerAuthority())
 		{
 			// Клиент: реплика игрока появляется позже серверной рассылки,
 			// поэтому дозапрашиваем актуальное состояние инвентаря.
-			Inv.InventoryRelay.Instance?.RpcId(1, nameof(Inv.InventoryRelay.RequestInventorySync), (long)PlayerId);
+			ServiceLocator.Inventory?.RequestInventorySync((long)PlayerId);
 		}
 	}
 
@@ -102,7 +98,7 @@ public partial class PlayerController : CharacterBody3D
 	{
 		// Локального игрока двигает физика; чужих реплики плавно догоняют
 		// сетевые цели. Большой скачок переносится мгновенно.
-		if (Multiplayer.MultiplayerPeer == null || IsMultiplayerAuthority())
+		if (!(ServiceLocator.Network?.HasPeer ?? false) || IsMultiplayerAuthority())
 		{
 			return;
 		}
@@ -121,16 +117,11 @@ public partial class PlayerController : CharacterBody3D
 
 	public override void _ExitTree()
 	{
-		AllPlayers.Remove(PlayerId);
+		ServiceLocator.Players?.Unregister(PlayerId);
 
-		if (LobbyManager.Instance != null)
+		if (ServiceLocator.Lobby != null)
 		{
-			LobbyManager.Instance.LobbyUpdated -= OnLobbyUpdated;
-		}
-
-		if (LocalPlayer == this)
-		{
-			LocalPlayer = null;
+			ServiceLocator.Lobby.LobbyUpdated -= OnLobbyUpdated;
 		}
 	}
 
@@ -180,7 +171,7 @@ public partial class PlayerController : CharacterBody3D
 	// Стартовый набор по роли. Вызывается сервером в начале каждого раунда.
 	public void GiveRoleLoadout()
 	{
-		if (!Multiplayer.IsServer())
+		if (!(ServiceLocator.Network?.IsServer ?? false))
 		{
 			return;
 		}
@@ -188,8 +179,8 @@ public partial class PlayerController : CharacterBody3D
 		Inventory.Clear();
 
 		PlayerRole role = Role;
-		if (LobbyManager.Instance != null
-			&& LobbyManager.Instance.Players.TryGetValue(PlayerId, out LobbyPlayerInfo info))
+		if (ServiceLocator.Lobby?.Players != null
+			&& ServiceLocator.Lobby.Players.TryGetValue(PlayerId, out LobbyPlayerInfo info))
 		{
 			role = info.Role;
 		}
@@ -198,7 +189,7 @@ public partial class PlayerController : CharacterBody3D
 		// надзиратель — как оружие). Расходники и инструменты барьеров ищут в мире.
 		Inventory.AddItem(Inv.ItemDatabase.Get(G.Door.AxeItemId), 1);
 		Inventory.TryEquip(0);
-		Inv.InventoryRelay.Instance?.BroadcastInventory(this);
+		ServiceLocator.Inventory?.BroadcastInventory(this);
 	}
 
 	// Применяет здоровье и состояние, пришедшие от сервера.

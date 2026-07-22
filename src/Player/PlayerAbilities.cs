@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using EscapeGame.Services;
 
 namespace EscapeGame.Player;
 
@@ -66,7 +67,7 @@ public partial class PlayerAbilities : Node
 			return false;
 		}
 
-		return Multiplayer.MultiplayerPeer != null
+		return ServiceLocator.Network?.HasPeer ?? false
 			&& _player.IsMultiplayerAuthority()
 			&& _player.VitalState == PlayerVitalState.Alive;
 	}
@@ -162,7 +163,7 @@ public partial class PlayerAbilities : Node
 			marker.Visible = false;
 		}
 
-		foreach (PlayerController p in PlayerController.AllPlayers.Values)
+		foreach (PlayerController p in ServiceLocator.Players.All)
 		{
 			if (p.Role != PlayerRole.Prisoner
 				|| p.VitalState != PlayerVitalState.Alive

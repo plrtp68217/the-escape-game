@@ -1,6 +1,7 @@
 using Godot;
 using EscapeGame.Logging;
 using EscapeGame.Network;
+using EscapeGame.Services;
 
 namespace EscapeGame.Player;
 
@@ -35,8 +36,8 @@ public partial class PlayerVisuals : Node
 
 	public void RefreshRoleModel()
 	{
-		if (Network.LobbyManager.Instance == null
-			|| !Network.LobbyManager.Instance.Players.TryGetValue(_player.PlayerId, out Network.LobbyPlayerInfo info))
+		if (ServiceLocator.Lobby?.Players == null
+			|| !ServiceLocator.Lobby.Players.TryGetValue(_player.PlayerId, out LobbyPlayerInfo info))
 		{
 			return;
 		}

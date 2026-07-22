@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Godot;
 using EscapeGame.Inventory;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.Interaction;
 
@@ -50,7 +51,7 @@ public partial class CellDoor : StaticBody3D, IInteractable
     // перезапуске раунда. Только сервер; состояние рассылается через SyncState.
     public void ResetState()
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }

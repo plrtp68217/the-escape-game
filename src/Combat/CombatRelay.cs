@@ -3,6 +3,7 @@ using Godot;
 using EscapeGame.GameFlow;
 using EscapeGame.Inventory;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.Combat;
 
@@ -25,7 +26,7 @@ public partial class CombatRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestAttack(long attackerId, long targetId)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -70,7 +71,7 @@ public partial class CombatRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestUseItem(long playerId, int slotIndex)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -110,7 +111,7 @@ public partial class CombatRelay : Node
     [Rpc(MultiplayerApi.RpcMode.AnyPeer, CallLocal = true, TransferMode = MultiplayerPeer.TransferModeEnum.Reliable)]
     public void RequestRevive(long reviverId)
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
@@ -125,7 +126,7 @@ public partial class CombatRelay : Node
 
         PlayerController target = null;
         float best = G.Combat.ReviveRange * G.Combat.ReviveRange;
-        foreach (PlayerController p in PlayerController.AllPlayers.Values)
+        foreach (PlayerController p in ServiceLocator.Players.All)
         {
             if (p.Role != PlayerRole.Prisoner || p.VitalState != PlayerVitalState.Downed)
             {
@@ -152,12 +153,12 @@ public partial class CombatRelay : Node
     // Сервер сбрасывает здоровье всех игроков в начале раунда.
     public void ResetAll()
     {
-        if (!Multiplayer.IsServer())
+        if (!ServiceLocator.Network?.IsServer ?? false)
         {
             return;
         }
 
-        foreach (PlayerController p in PlayerController.AllPlayers.Values)
+        foreach (PlayerController p in ServiceLocator.Players.All)
         {
             SyncVitalsTo(p, G.Combat.MaxHealth, PlayerVitalState.Alive);
         }
@@ -177,7 +178,7 @@ public partial class CombatRelay : Node
 
     private static PlayerController Find(long playerId)
     {
-        return PlayerController.AllPlayers.Values.FirstOrDefault(p => p.PlayerId == playerId);
+        return ServiceLocator.Players.All.FirstOrDefault(p => p.PlayerId == playerId);
     }
 
     private static bool IsMedical(string itemId)

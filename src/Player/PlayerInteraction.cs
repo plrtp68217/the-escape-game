@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Godot;
+using EscapeGame.Services;
 
 namespace EscapeGame.Player;
 
@@ -20,10 +21,13 @@ public partial class PlayerInteraction : Node
 	public bool HasTarget => _targetInteractable != null;
 	public Interaction.IInteractable Target => _targetInteractable;
 
+	private IInteractionService _interaction;
+
 	public override void _Ready()
 	{
 		_player = GetParent<PlayerController>();
 		_camera = _player.GetNodeOrNull<PlayerCamera>("Camera");
+		_interaction = ServiceLocator.Interaction;
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -87,9 +91,7 @@ public partial class PlayerInteraction : Node
 	{
 		if (_targetInteractable is Node node && GodotObject.IsInstanceValid(node))
 		{
-			Interaction.InteractionRelay.Instance?.RpcId(1,
-				nameof(Interaction.InteractionRelay.RequestInteract),
-				(long)_player.PlayerId, node.GetPath().ToString());
+			_interaction?.RequestInteract((long)_player.PlayerId, node.GetPath().ToString());
 		}
 	}
 
@@ -239,14 +241,14 @@ public partial class PlayerInteraction : Node
 			return false;
 		}
 
-		return Multiplayer.MultiplayerPeer != null
+		return ServiceLocator.Network?.HasPeer ?? false
 			&& _player.IsMultiplayerAuthority()
 			&& Input.GetMouseMode() == Input.MouseModeEnum.Captured;
 	}
 
 	private bool IsActiveForInput()
 	{
-		return Multiplayer.MultiplayerPeer != null
+		return ServiceLocator.Network?.HasPeer ?? false
 			&& _player.IsMultiplayerAuthority();
 	}
 

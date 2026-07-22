@@ -1,4 +1,5 @@
 using Godot;
+using EscapeGame.Services;
 
 namespace EscapeGame.Player;
 
@@ -80,7 +81,7 @@ public partial class PlayerMovement : Node
 			return false;
 		}
 
-		return Multiplayer.MultiplayerPeer != null
+		return ServiceLocator.Network?.HasPeer ?? false
 			&& _player.IsMultiplayerAuthority();
 	}
 

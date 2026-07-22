@@ -1,4 +1,6 @@
 using Godot;
+using EscapeGame.Core;
+using EscapeGame.Services;
 
 namespace EscapeGame.Player;
 
@@ -27,9 +29,12 @@ public partial class PlayerCombat : Node
 	public bool IsSelfHealing => _healProgress > 0f;
 	public float SelfHealProgress => _healProgress;
 
+	private ICombatService _combat;
+
 	public override void _Ready()
 	{
 		_player = GetParent<PlayerController>();
+		_combat = ServiceLocator.Combat;
 		_camera = _player.GetNodeOrNull<PlayerCamera>("Camera");
 		_hand = _player.GetNodeOrNull<Marker3D>("Pivot/Hand");
 		if (_hand != null)
@@ -109,16 +114,14 @@ public partial class PlayerCombat : Node
 			if (collider is PlayerController target && target.Role == PlayerRole.Prisoner)
 			{
 				_player.NotifyHitConfirmed();
-				Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestAttack),
-					(long)_player.PlayerId, (long)target.PlayerId);
+				_combat?.RequestAttack((long)_player.PlayerId, (long)target.PlayerId);
 			}
 			return;
 		}
 
 		if (collider is Interaction.CellDoor door)
 		{
-			Interaction.InteractionRelay.Instance?.RpcId(1, nameof(Interaction.InteractionRelay.RequestAxeHit),
-				(long)_player.PlayerId, door.GetPath().ToString());
+			ServiceLocator.Interaction?.RequestAxeHit((long)_player.PlayerId, door.GetPath().ToString());
 		}
 	}
 
@@ -167,8 +170,7 @@ public partial class PlayerCombat : Node
 		{
 			_healProgress = 1f;
 			_healSent = true;
-			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestUseItem),
-				(long)_player.PlayerId, _player.Inventory.EquippedSlotIndex);
+			_combat?.RequestUseItem((long)_player.PlayerId, _player.Inventory.EquippedSlotIndex);
 		}
 	}
 
@@ -207,8 +209,7 @@ public partial class PlayerCombat : Node
 		{
 			_reviveProgress = 1f;
 			_reviveSentTo = _reviveTarget;
-			Combat.CombatRelay.Instance?.RpcId(1, nameof(Combat.CombatRelay.RequestRevive),
-				(long)_player.PlayerId);
+			_combat?.RequestRevive((long)_player.PlayerId);
 		}
 	}
 
@@ -217,7 +218,7 @@ public partial class PlayerCombat : Node
 		PlayerController best = null;
 		float bestDistance = G.Combat.ReviveRange * G.Combat.ReviveRange;
 
-		foreach (PlayerController p in PlayerController.AllPlayers.Values)
+		foreach (PlayerController p in ServiceLocator.Players.All)
 		{
 			if (p == _player
 				|| p.Role != PlayerRole.Prisoner
@@ -245,7 +246,7 @@ public partial class PlayerCombat : Node
 			return false;
 		}
 
-		return Multiplayer.MultiplayerPeer != null
+		return ServiceLocator.Network?.HasPeer ?? false
 			&& _player.IsMultiplayerAuthority();
 	}
 }

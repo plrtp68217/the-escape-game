@@ -1,6 +1,7 @@
 using Godot;
 using EscapeGame.GameFlow;
 using EscapeGame.Player;
+using EscapeGame.Services;
 
 namespace EscapeGame.Core;
 
@@ -18,7 +19,7 @@ public partial class ExitZone : Area3D
     {
         // Физический сигнал может прийти, когда сетевого пира ещё/уже нет
         // (меню, момент отключения). IsServer() без пира сыпет ошибкой — выходим.
-        if (Multiplayer.MultiplayerPeer == null || !Multiplayer.IsServer())
+        if (!(ServiceLocator.Network?.HasPeer ?? false) || !(ServiceLocator.Network?.IsServer ?? false))
         {
             return;
         }
